@@ -1,8 +1,8 @@
 {
   "name": "Shuffleboard App",
-  "description": "A starter project for modern React apps with Redux",
-  "version": "1.1.1",
-  "author": "Nick S. Plekhanov <nickatgit@yandex.com>",
+  "description": "Shuffleboard over websockets",
+  "version": "1.1.0",
+  "author": "Kevin Dyer <thedude136895@gmail.com>",
   "license": "MIT",
   "keywords": [
     "react",
@@ -21,9 +21,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicksp/redux-webpack-es6-boilerplate.git"
+    "url": "https://github.com/kevin-dyer/shuffleboard-app.git"
   },
-  "bugs": "https://github.com/nicksp/redux-webpack-es6-boilerplate/issues",
+  "bugs": "https://github.com/kevin-dyer/shuffleboard-app/issues",
   "scripts": {
     "clean:build": "rimraf build",
     "build:html": "node ./bin/buildHtml.js",
