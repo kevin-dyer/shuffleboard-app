@@ -1,5 +1,5 @@
 {
-  "name": "redux-webpack-es6-boilerplate",
+  "name": "Shuffleboard App",
   "description": "A starter project for modern React apps with Redux",
   "version": "1.1.1",
   "author": "Nick S. Plekhanov <nickatgit@yandex.com>",
@@ -106,6 +106,7 @@
     "redux": "3.5.2",
     "redux-logger": "2.6.1",
     "redux-promise": "0.5.3",
-    "reselect": "2.5.3"
+    "reselect": "2.5.3",
+    "websocket": "1.0.25"
   }
 }
