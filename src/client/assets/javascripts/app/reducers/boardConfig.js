@@ -1,20 +1,11 @@
 import {
   RECEIVED_BOARD_CONFIG,
-  SET_SOCKET_ID
+  SET_SOCKET_ID,
+  UPDATE_USER_COUNT
 } from 'app/actions/socket-actions'
 import _ from 'underscore'
 
 const mergeBoardConfigs = (devices, device) => {
-
-  // const oldDevice = _.findWhere(devices, {id: device.id})
-  // let nextDevices
-  // if (oldDevice) {
-  //   return 
-  // }
-  // return _.sortBy([
-  //   ...devices,
-  //   device
-  // ], d => d.timestamp)
   return {
     ...devices,
     [device.id]: {
@@ -26,7 +17,8 @@ const mergeBoardConfigs = (devices, device) => {
 
 const initialState = {
   devices: {},
-  socketId: null
+  socketId: null,
+  userCount: 1 //always start with self
 }
 
 export function boardConfig(state = initialState, action = {}) {
@@ -41,6 +33,12 @@ export function boardConfig(state = initialState, action = {}) {
       return {
         ...state,
         socketId: action.socketId
+      }
+
+    case UPDATE_USER_COUNT:
+      return {
+        ...state,
+        userCount: action.userCount
       }
 
     default:

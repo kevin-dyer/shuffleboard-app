@@ -1,18 +1,7 @@
-// import {client} from 'websocket'
-// const WebSocketClient = require('websocket').client;
-
-// const client = new WebSocketClient();
-// const WebSocket = require('ws');
-// import WebSocket from 'ws'
-
-// const ws = new WebSocket('ws://localhost:8080');
 import io from 'socket.io-client'
 
 const uri = 'http://localhost:8080'
 let socket
-
-
-
 
 
 export const OPEN_GAME_SOCKET = 'OPEN_GAME_SOCKET'
@@ -20,17 +9,28 @@ export const CLOSE_GAME_SOCKET = 'CLOSE_GAME_SOCKET'
 export const BROADCAST_BOARD_CONFIG = 'BROADCAST_BOARD_CONFIG'
 export const RECEIVED_BOARD_CONFIG = 'RECEIVED_BOARD_CONFIG'
 export const SET_SOCKET_ID = 'SET_SOCKET_ID'
+export const USER_JOINED = 'USER_JOINED'
+export const USER_LEFT = 'USER_LEFT'
+export const UPDATE_USER_COUNT = 'UPDATE_USER_COUNT'
 
 export const init = (store) => {
 	socket = io(uri)
 		.on('connect', function() {
-			console.log("this.id: ", this.id)
 			store.dispatch(setSocketId(this.id))
 		})
 	//listen here for updates to remote board configs
 	socket.on(BROADCAST_BOARD_CONFIG, payload => {
 		console.log("ws RECEIVED_BOARD_CONFIG, payload: ", payload)
 		store.dispatch(receivedBoardConfig(payload))
+	})
+
+	socket.on(USER_JOINED, payload => {
+		console.log("USER_JOINED! payload.userCount: ", payload.userCount)
+		store.dispatch(updateUserCount(payload.userCount))
+	})
+	socket.on(USER_LEFT, payload => {
+		console.log("USER_LEFT!")
+		store.dispatch(updateUserCount(payload.userCount))
 	})
 }
 
@@ -51,11 +51,21 @@ export function closeGameSocket() {
 export function broadcastConfig(config) {
 	return dispatch => {
 		emit(BROADCAST_BOARD_CONFIG, config)
-		dispatch(receivedBoardConfig(config))
+
+		console.log("broadcastConfig called, calling receivedBoardConfig")
+		dispatch(receivedBoardConfig(config)) //To update self in devices
+	}
+}
+
+export function updateUserCount (userCount) {
+	return {
+		type: UPDATE_USER_COUNT,
+		userCount
 	}
 }
 
 function receivedBoardConfig(payload) {
+	console.log("receivedBoardConfig called!")
 	return {
 		type: RECEIVED_BOARD_CONFIG,
 		payload

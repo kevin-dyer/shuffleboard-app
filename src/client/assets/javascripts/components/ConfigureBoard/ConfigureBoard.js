@@ -14,7 +14,7 @@ const stateToProps = ({boardConfig}) => ({
 	boardConfig
 })
 
-@connect(stateToProps, {})
+@connect(stateToProps, {broadcastConfig})
 export default class ConfigureBoard extends Component {
 	constructor() {
 		super()
@@ -22,8 +22,6 @@ export default class ConfigureBoard extends Component {
 		this.state = {touches: []}
 	}
 	componentDidMount() {
-		// console.log("Configure board mounted")
-
 		const bodyElement = d3.select("body")
 	    .on("touchstart", this.nozoom)
 	    .on("touchmove", this.nozoom)
@@ -40,8 +38,7 @@ export default class ConfigureBoard extends Component {
     	// .on("mousedown", this.mouseHandler)
     	.on("mousemove", ::this.mouseHandler);
 
-    // console.log("svg: ", svg)
-		this.throttledUpdate = _.throttle(::this.updateBoardConfiguration, 200)
+		this.throttledUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
 	}
 
 	// touchHandler() {
@@ -71,18 +68,7 @@ export default class ConfigureBoard extends Component {
     d3.event.stopPropagation();
     const svg = d3.select(".board-svg")
     const d = d3.mouse(svg.node());
-
-    // console.log("this.state: ", this.state, ", d: ", d)
     const stateTouches = this.state.touches
-
-    //NOTE: this looks bad - trace skips
-    //TODO: find distance between d and the last point in stateTouches, only go forward if far enough apart
-    // if (stateTouches[0] && stateTouches[0].length && distance(stateTouches[0][stateTouches[0].length - 1], d) < 20) {
-    // 	console.log("skipping mousemove")
-    // 	return
-    // }
-
-    // console.log("d: ", d)
     const touches = stateTouches && stateTouches.length > 0
     	? stateTouches.map((finger, index) => {
 		    	return [
@@ -92,14 +78,11 @@ export default class ConfigureBoard extends Component {
 		    })
     	: [[d]]
 
-    // console.log("next touches: ", touches)
-
     this.setState({
     	touches
     }, () => {
     	this.updateFingerTrace()
     	this.throttledUpdate()
-    	// this.updateBoardConfiguration()
     })
 	}
 
@@ -133,11 +116,14 @@ export default class ConfigureBoard extends Component {
 	}
 
 	updateBoardConfiguration() {
-		console.log("updateBoardConfiguration called")
-		// const {broadcastConfig} = this.props
-		//TODO: update board config and broadcast it
-		//First, determine direction (broken down into directionY and inverted)
-		const {boardConfig: {socketId}} = this.props
+		const {
+			boardConfig: {
+				socketId,
+				devices,
+				userCount
+			},
+			broadcastConfig
+		} = this.props
 		const {touches} = this.state
 		const firstFinger = touches[0]
 		if (!firstFinger) {
@@ -157,20 +143,42 @@ export default class ConfigureBoard extends Component {
 		//Can store first and last x and y values
 		const firstTouch = touches.map(touchStream => touchStream[0])
 		const lastTouch = touches.map(touchStream => touchStream[touchStream.length - 1])
+		const firstFingerDist = this.getFingerDistance(firstTouch, directionY)
+		const lastFingerDist = this.getFingerDistance(lastTouch, directionY)
+		
+		console.log("firstFingerDist: ", firstFingerDist, ", lastFingerDist: ", lastFingerDist)
 
-		//use direction, window dimension, 
-
-		//TODO: need timestamp
+		//TODO: can compare boardConfig.devices[0].lastFingerDist to firstFingerDist to get the px multiplier
+		//but skip for now, not even sure this is necessary
 		const boardConfig = {
 			id: socketId,
 			directionY,
 			inverted,
 			firstTouch, //TODO: replace these with pixel density
 			lastTouch,
+			firstFingerDist,
+			lastFingerDist,
+			width: window.innerWidth,
+			height: window.innerHeight,
 			timestamp: moment().valueOf()
 		}
 
 		broadcastConfig(boardConfig)
+
+		//determine if update is finished (devices.length === userCount && )
+		if (Object.keys(devices).length === userCount) {
+			console.log("Update is complete, redirect to game!")
+			//should redirect to game board and use devices to create a new game board object
+			//this will define order and dimensions of board
+		}
+	}
+
+	getFingerDistance(touchPoints, directionY) {
+		if (touchPoints.length !== 2) return null
+
+		return directionY
+			? Math.abs(touchPoints[0][0] - touchPoints[1][0])
+			: Math.abs(touchPoints[0][1] - touchPoints[1][1])
 	}
 
   render() {
