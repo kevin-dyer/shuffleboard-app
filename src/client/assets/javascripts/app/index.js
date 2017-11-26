@@ -7,6 +7,7 @@ import Redbox from 'redbox-react';
 
 import Root from './Root';
 import configureStore from './store/configureStore';
+import {init} from './actions/socket-actions';
 
 import 'styles/bootstrap.min.css';
 import 'styles/styles.scss';
@@ -16,6 +17,8 @@ const history = syncHistoryWithStore(browserHistory, store);
 
 // Get the DOM Element that will host our React application
 const rootEl = document.getElementById('app');
+
+init(store)
 
 // Render the React application to the DOM
 render(

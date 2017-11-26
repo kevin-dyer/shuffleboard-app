@@ -1,5 +1,5 @@
 {
-  "name": "Shuffleboard App",
+  "name": "shuffleboard-app",
   "description": "Shuffleboard over websockets",
   "version": "1.1.0",
   "author": "Kevin Dyer <thedude136895@gmail.com>",
@@ -96,6 +96,7 @@
     "classnames": "2.2.5",
     "express": "4.14.0",
     "lodash": "4.15.0",
+    "moment": "2.19.2",
     "raven-js": "3.6.1",
     "react": "15.3.1",
     "react-dom": "15.3.1",
@@ -106,7 +107,10 @@
     "redux": "3.5.2",
     "redux-logger": "2.6.1",
     "redux-promise": "0.5.3",
+    "redux-thunk": "2.2.0",
     "reselect": "2.5.3",
-    "websocket": "1.0.25"
+    "socket.io": "2.0.4",
+    "underscore": "1.8.3",
+    "ws": "3.3.2"
   }
 }

@@ -4,15 +4,17 @@ import { Link } from 'react-router';
 import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
+import moment from 'moment'
+import _ from 'underscore'
 function distance ([x0, y0], [x1, y1]) {
 	return Math.pow((Math.pow((y1 - y0), 2) + Math.pow((x1 - x0), 2)), 0.5)
 }
 
-const stateToProps = ({}) => ({
-
+const stateToProps = ({boardConfig}) => ({
+	boardConfig
 })
 
-@connect(stateToProps, {broadcastConfig})
+@connect(stateToProps, {})
 export default class ConfigureBoard extends Component {
 	constructor() {
 		super()
@@ -20,7 +22,7 @@ export default class ConfigureBoard extends Component {
 		this.state = {touches: []}
 	}
 	componentDidMount() {
-		console.log("Configure board mounted")
+		// console.log("Configure board mounted")
 
 		const bodyElement = d3.select("body")
 	    .on("touchstart", this.nozoom)
@@ -39,7 +41,7 @@ export default class ConfigureBoard extends Component {
     	.on("mousemove", ::this.mouseHandler);
 
     // console.log("svg: ", svg)
-		
+		this.throttledUpdate = _.throttle(::this.updateBoardConfiguration, 200)
 	}
 
 	// touchHandler() {
@@ -90,12 +92,14 @@ export default class ConfigureBoard extends Component {
 		    })
     	: [[d]]
 
-    console.log("next touches: ", touches)
+    // console.log("next touches: ", touches)
 
     this.setState({
     	touches
     }, () => {
     	this.updateFingerTrace()
+    	this.throttledUpdate()
+    	// this.updateBoardConfiguration()
     })
 	}
 
@@ -107,21 +111,21 @@ export default class ConfigureBoard extends Component {
 		const line = d3.line()
 		  // .x(d => d[0])
 		  .x(d => {
-		  	console.log("line x, d: ", d)
+		  	// console.log("line x, d: ", d)
 		  	return d[0]
 		  })
 		  .y(d => d[1])
 		  .curve(d3.curveBasis)
 
-		console.log("updateFingerTrace. this.state: ", this.state)
+		// console.log("updateFingerTrace. this.state: ", this.state)
 
 		const traces = d3.select('.board-svg').selectAll('.finger-trace')
 			.data(this.state.touches)
 
 		traces.enter().append('path')
 			.attr("class", "finger-trace")
-			.style("stroke", "#454545")
-			.style("stroke-width", 10)
+			.style("stroke", "rgba(0,0,0,0.2)")
+			.style("stroke-width", 25)
 			.style("fill", "none")
 
 		.merge(traces)
@@ -129,8 +133,11 @@ export default class ConfigureBoard extends Component {
 	}
 
 	updateBoardConfiguration() {
+		console.log("updateBoardConfiguration called")
+		// const {broadcastConfig} = this.props
 		//TODO: update board config and broadcast it
 		//First, determine direction (broken down into directionY and inverted)
+		const {boardConfig: {socketId}} = this.props
 		const {touches} = this.state
 		const firstFinger = touches[0]
 		if (!firstFinger) {
@@ -153,12 +160,17 @@ export default class ConfigureBoard extends Component {
 
 		//use direction, window dimension, 
 
+		//TODO: need timestamp
 		const boardConfig = {
+			id: socketId,
 			directionY,
 			inverted,
 			firstTouch, //TODO: replace these with pixel density
-			lastTouch
+			lastTouch,
+			timestamp: moment().valueOf()
 		}
+
+		broadcastConfig(boardConfig)
 	}
 
   render() {
