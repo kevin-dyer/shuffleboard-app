@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
-import { Link } from 'react-router';
+import { Link, withRouter } from 'react-router';
+// import {withRouter} from 'react-router-dom';
 import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
@@ -14,7 +15,9 @@ const stateToProps = ({boardConfig}) => ({
 	boardConfig
 })
 
+
 @connect(stateToProps, {broadcastConfig})
+@withRouter
 export default class ConfigureBoard extends Component {
 	constructor() {
 		super()
@@ -39,6 +42,22 @@ export default class ConfigureBoard extends Component {
     	.on("mousemove", ::this.mouseHandler);
 
 		this.throttledUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
+	}
+
+	componentDidUpdate() {
+		const {
+			boardConfig: {
+				socketId,
+				devices,
+				userCount
+			},
+			router
+		} = this.props
+
+		if (Object.keys(devices).length === userCount) {
+			console.log("Update is complete, redirect to game!")
+			router.push('/shuffleboard')
+		}
 	}
 
 	// touchHandler() {
@@ -122,7 +141,8 @@ export default class ConfigureBoard extends Component {
 				devices,
 				userCount
 			},
-			broadcastConfig
+			broadcastConfig,
+			router
 		} = this.props
 		const {touches} = this.state
 		const firstFinger = touches[0]
@@ -165,12 +185,16 @@ export default class ConfigureBoard extends Component {
 
 		broadcastConfig(boardConfig)
 
+		//TODO: this should be moved into didRee
 		//determine if update is finished (devices.length === userCount && )
-		if (Object.keys(devices).length === userCount) {
-			console.log("Update is complete, redirect to game!")
-			//should redirect to game board and use devices to create a new game board object
-			//this will define order and dimensions of board
-		}
+		// console.log("devices: ", devices, ", userCount: ", userCount, ", ===: ", Object.keys(devices).length === userCount)
+		// if (Object.keys(devices).length === userCount) {
+		// 	console.log("Update is complete, redirect to game!")
+		// 	//should redirect to game board and use devices to create a new game board object
+		// 	//this will define order and dimensions of board
+		// 	// console.log("history: ", history)
+		// 	router.push('/shuffleboard')
+		// }
 	}
 
 	getFingerDistance(touchPoints, directionY) {
