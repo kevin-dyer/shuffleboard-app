@@ -60,7 +60,7 @@ export default class Shuffleboard extends Component {
 				if(boardWidth > device.width) {
 					boardWidth = device.width
 				}
-			} {
+			} else {
 				boardLength += device.width
 
 				if (boardWidth > device.height) {
@@ -86,8 +86,9 @@ export default class Shuffleboard extends Component {
 			boardWidth,
 			lengthOffset
 		})
+	}
 
-		console.log("boardLength: ", boardLength, ", boardWidth: ", boardWidth, ", lengthOffset: ", lengthOffset)
+	componentDidUpdate() {
 		this.drawBoard()
 	}
 
@@ -105,18 +106,27 @@ export default class Shuffleboard extends Component {
 
 		console.log("device: ", device)
     // create engine
-    var engine = Engine.create(),
-        world = engine.world;
+    const engine = Engine.create()
+    const world = engine.world
 
+    //set gravity to zero
+    engine.world.gravity.y = 0
+
+        console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
     // create renderer
     var render = Render.create({
         element: document.getElementById("shuffleboard-container"),
         engine: engine,
         options: {
-            // width: device.directionY ? boardWidth : boardLength,
-            // height: device.directionY ? boardLength : boardWidth,
-            width: 800,
-            height: 600,
+            width: device.directionY ? boardWidth : boardLength,
+            height: device.directionY ? boardLength : boardWidth,
+            // width: 800,
+            // height: 600,
+            hasBounds: true,
+            showShadows: true,
+            showVelocity: true,
+		        showCollisions: true,
+		        showSeparations: true,
             showAngleIndicator: true
         }
     });
@@ -134,31 +144,54 @@ export default class Shuffleboard extends Component {
     // var stack = Composites.stack(400, yy, 5, rows, 0, 0, function(x, y) {
     //     return Bodies.rectangle(x, y, 40, 40);
     // });
-    
-    World.add(world, [
-        // stack,
-        // walls
-        Bodies.rectangle(
+    let gutters
+    if (device.directionY) {
+    	gutters = [
+    		Bodies.rectangle(
         	0,
         	0,
-        	device.directionY ? 50 : device.width,
-        	device.directionY ? device.height : 50,
+        	50,
+        	device.height,
         	{ isStatic: true }
         ),
         Bodies.rectangle(
-        	device.directionY
-        		? device.width - 50
-        		: 0,
-        	device.directionY
-        		? 0
-        		: device.height - 50,
-        	device.directionY ? 50 : device.width,
-        	device.directionY ? device.height : 50,
+        	device.width - 50,
+        	0,
+        	50,
+        	device.height,
         	{ isStatic: true }
         )
-    ]);
+    	]
+    } else {
+    	console.log("device.width: ", device.width)
+    	gutters = [
+    		Bodies.rectangle(
+        	0,
+        	0,
+        	device.width,
+        	50,
+        	{ isStatic: true }
+        ),
+        Bodies.rectangle(
+        	0,
+        	device.height - 50,
+        	device.width,
+        	50,
+        	{ isStatic: true }
+        )
+    	]
+    }
+
+    console.log("gutters: ", gutters)
+
+    World.add(world, gutters);
     
-    var ball = Bodies.circle(100, 400, 50, { density: 0.04, frictionAir: 0.005});
+    var ball = Bodies.circle(
+    	device.directionY ? device.width / 2 : 75,
+    	device.directionY ? 75 : device.height / 2,
+    	50,
+    	{ density: 0.04, frictionAir: 0.005}
+    )
     
     World.add(world, ball);
     // World.add(world, Constraint.create({
@@ -186,30 +219,34 @@ export default class Shuffleboard extends Component {
     // fit the render viewport to the scene
     Render.lookAt(render, {
         min: {
-        	// x: device.directionY
-	        // 	? 0
-	        // 	: lengthOffset,
-        	// y: device.directionY
-	        // 	?	lengthOffset
-	        // 	: 0
-	        x: 0, y: 0
+        	x: device.directionY
+	        	? 0
+	        	: lengthOffset,
+        	y: device.directionY
+	        	?	lengthOffset
+	        	: 0
         },
         max: {
-        	// x: device.directionY
-	        // 	? device.width
-	        // 	: lengthOffset + device.width,
-        	// y: device.directionY
-	        // 	? lengthOffset + device.height
-	        // 	: device.height
-	        x: 800, y: 600
+        	x: device.directionY
+	        	? device.width
+	        	: lengthOffset + device.width,
+        	y: device.directionY
+	        	? lengthOffset + device.height
+	        	: device.height
         }
+        // min: {x: 0, y: 0},
+        // max: {
+        // 	x: device.directionY ? device.width : device.height,
+        // 	y: device.directionY ? device.height : device.width
+        // }
+        // min: {x: 0, y: 0},
+        // max: {x: 800, y: 600}
     });
 	}
 
   render() {
     return (
       <div className="shuffleboard-container" id="shuffleboard-container">
-        This is the shuffleboard!!!
       </div>
     );
   }
