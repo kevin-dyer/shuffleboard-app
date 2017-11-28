@@ -124,9 +124,6 @@ export default class Shuffleboard extends Component {
             // height: 600,
             hasBounds: true,
             showShadows: true,
-            showVelocity: true,
-		        showCollisions: true,
-		        showSeparations: true,
             showAngleIndicator: true
         }
     });
