@@ -1,22 +1,10 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
 import { Link, withRouter } from 'react-router';
-import * as d3 from 'd3';
 import './shuffleboard.scss';
 import moment from 'moment'
 import _ from 'underscore'
-// import * as Matter from 'matter-js'
-import {
-	Engine,
-	Render,
-	Runner,
-	Composites,
-	MouseConstraint,
-	Mouse,
-	World,
-	Constraint,
-	Bodies
-} from 'matter-js'
+import * as d3 from 'd3'
 import {setBoardDimensions} from 'app/actions/shuffleboard-actions'
 
 
@@ -103,147 +91,65 @@ export default class Shuffleboard extends Component {
 			}
 		} = this.props
 		const device = devices[socketId]
+		const margin = {top: 20, right: 20, bottom: 20, left: 20}
 
 		console.log("device: ", device)
-    // create engine
-    const engine = Engine.create()
-    const world = engine.world
 
-    //set gravity to zero
-    engine.world.gravity.y = 0
+		const svg = d3.select("#shuffleboard-svg")
+		const g = svg.select(".inner-board")
 
-        console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
-    // create renderer
-    var render = Render.create({
-        element: document.getElementById("shuffleboard-container"),
-        engine: engine,
-        options: {
-            width: device.directionY ? boardWidth : boardLength,
-            height: device.directionY ? boardLength : boardWidth,
-            // width: 800,
-            // height: 600,
-            hasBounds: true,
-            showShadows: true,
-            showAngleIndicator: true
-        }
-    });
+		svg.attr("width", device.width)
+			.attr("height", device.height)
 
-    Render.run(render);
+		//BIG NOTE about transforming inner g
+		// board dimensions need to be standard across all devices
+		// so a board flipped 90deg needs to pretend that its inner.width is actually its height
 
-    // create runner
-    var runner = Runner.create();
-    Runner.run(runner, engine);
+		const xGOffset = device.directionY
+			? 0//(device.width - boardWidth) * 0.5
+			: -lengthOffset
+		const yGOffset = device.directionY
+			? -lengthOffset
+			: 0//(device.height - boardWidth) * 0.5
+		// const degOffset = (device.directionY ? 0 : 90) + (device.inverted ? 180 : 0)
 
-    // add bodies
-    // var rows = 10,
-    //     yy = 600 - 21 - 40 * rows;
-    
-    // var stack = Composites.stack(400, yy, 5, rows, 0, 0, function(x, y) {
-    //     return Bodies.rectangle(x, y, 40, 40);
-    // });
-    let gutters
-    if (device.directionY) {
-    	gutters = [
-    		Bodies.rectangle(
-        	0,
-        	0,
-        	50,
-        	device.height,
-        	{ isStatic: true }
-        ),
-        Bodies.rectangle(
-        	device.width - 50,
-        	0,
-        	50,
-        	device.height,
-        	{ isStatic: true }
-        )
-    	]
-    } else {
-    	console.log("device.width: ", device.width)
-    	gutters = [
-    		Bodies.rectangle(
-        	0,
-        	0,
-        	device.width,
-        	50,
-        	{ isStatic: true }
-        ),
-        Bodies.rectangle(
-        	0,
-        	device.height - 50,
-        	device.width,
-        	50,
-        	{ isStatic: true }
-        )
-    	]
-    }
+		//NOTE: not sure if treanslate and rotate work together as expected - hopefully rotating first helps
+		//Question, how does rotate affect the orientation of x and y?
+		//How do I apply margins with rotate?
+		// g.attr("transform", `translate(${xGOffset}, ${yGOffset}) rotate(${degOffset})`)
+		// 	.attr("transform-origin", "center")
+		// g.attr("transform", `translate(${xGOffset}, ${yGOffset})`)
+		g.attr("transform", `translate(${margin.left}, ${margin.top})`)
 
-    console.log("gutters: ", gutters)
+		//update
+		const board = g.selectAll(".board")
+			.data([null])
 
-    World.add(world, gutters);
-    
-    var ball = Bodies.circle(
-    	device.directionY ? device.width / 2 : 75,
-    	device.directionY ? 75 : device.height / 2,
-    	50,
-    	{ density: 0.04, frictionAir: 0.005}
-    )
-    
-    World.add(world, ball);
-    // World.add(world, Constraint.create({
-    //     pointA: { x: 300, y: 100 },
-    //     bodyB: ball
-    // }));
+		board.enter().append('rect')
+			.attr("class", "board")
+			.attr("x", device.directionY
+				? (device.width - boardWidth) * 0.5
+				: 0
+			)
+			.attr("y", device.directionY
+				? -lengthOffset
+				: (device.height - boardWidth) * 0.5
+			)
+			.attr("height", (device.directionY ? boardLength  : boardWidth) - margin.top - margin.bottom)
+			.attr("width", (device.directionY ? boardWidth : boardLength) - margin.left - margin.right)
+			.style("stroke", "#000")
+			.style("stroke-width", 4)
+			.style("fill", "none")
 
-    // add mouse control
-    var mouse = Mouse.create(render.canvas),
-        mouseConstraint = MouseConstraint.create(engine, {
-            mouse: mouse,
-            constraint: {
-                stiffness: 0.2,
-                render: {
-                    visible: false
-                }
-            }
-        });
 
-    World.add(world, mouseConstraint);
-
-    // keep the mouse in sync with rendering
-    render.mouse = mouse;
-
-    // fit the render viewport to the scene
-    Render.lookAt(render, {
-        min: {
-        	x: device.directionY
-	        	? 0
-	        	: lengthOffset,
-        	y: device.directionY
-	        	?	lengthOffset
-	        	: 0
-        },
-        max: {
-        	x: device.directionY
-	        	? device.width
-	        	: lengthOffset + device.width,
-        	y: device.directionY
-	        	? lengthOffset + device.height
-	        	: device.height
-        }
-        // min: {x: 0, y: 0},
-        // max: {
-        // 	x: device.directionY ? device.width : device.height,
-        // 	y: device.directionY ? device.height : device.width
-        // }
-        // min: {x: 0, y: 0},
-        // max: {x: 800, y: 600}
-    });
 	}
 
   render() {
     return (
       <div className="shuffleboard-container" id="shuffleboard-container">
+      	<svg id="shuffleboard-svg">
+      		<g className="inner-board"/>
+      	</svg>
       </div>
     );
   }
