@@ -105,21 +105,32 @@ export default class Shuffleboard extends Component {
 		// board dimensions need to be standard across all devices
 		// so a board flipped 90deg needs to pretend that its inner.width is actually its height
 
-		const xGOffset = device.directionY
-			? 0//(device.width - boardWidth) * 0.5
-			: -lengthOffset
-		const yGOffset = device.directionY
-			? -lengthOffset
-			: 0//(device.height - boardWidth) * 0.5
-		// const degOffset = (device.directionY ? 0 : 90) + (device.inverted ? 180 : 0)
+		// const xGOffset = device.directionY
+		// 	? (device.width - boardWidth) * 0.5
+		// 	: -lengthOffset
+		// const yGOffset = device.directionY
+		// 	? -lengthOffset
+		// 	: (device.height - boardWidth) * 0.5
+		const xGOffset = (device.width - boardWidth) * 0.5
+		const yGOffset = -lengthOffset
+		const degOffset = (device.directionY ? 0 : 90) + (device.inverted ? 180 : 0)
+		// const xOrigin = device.directionY
+		// 	? boardWidth / 2
+		// 	: boardLength / 2
+		// const yOrigin = device.directionY
+		// 	? boardLength / 2
+		// 	: boardWidth / 2 
+		// const xOrigin = boardWidth / 2
+		// const yOrigin = boardLength / 2
+		const xOrigin = device.width / 2
+		const yOrigin = device.height / 2
 
-		//NOTE: not sure if treanslate and rotate work together as expected - hopefully rotating first helps
-		//Question, how does rotate affect the orientation of x and y?
-		//How do I apply margins with rotate?
-		// g.attr("transform", `translate(${xGOffset}, ${yGOffset}) rotate(${degOffset})`)
-		// 	.attr("transform-origin", "center")
-		// g.attr("transform", `translate(${xGOffset}, ${yGOffset})`)
-		g.attr("transform", `translate(${margin.left}, ${margin.top})`)
+		// g.attr("transform", `translate(${xGOffset + margin.left}, ${yGOffset + margin.top}) rotate(${degOffset}, ${xOrigin}, ${yOrigin})`)
+		// g.attr("transform", `translate(${xGOffset + margin.left}, ${yGOffset + margin.top})`)
+		
+		console.log("degOffset: ", degOffset, ", xOrigin: ", xOrigin, ", yOrigin: ", yOrigin)
+		g.attr("transform", `translate(${xGOffset}, ${yGOffset}) rotate(${degOffset}, ${xOrigin}, ${yOrigin})`)
+		// g.attr("transform", `translate(${margin.left}, ${margin.top})`)
 
 		//update
 		const board = g.selectAll(".board")
@@ -127,19 +138,25 @@ export default class Shuffleboard extends Component {
 
 		board.enter().append('rect')
 			.attr("class", "board")
-			.attr("x", device.directionY
-				? (device.width - boardWidth) * 0.5
-				: 0
-			)
-			.attr("y", device.directionY
-				? -lengthOffset
-				: (device.height - boardWidth) * 0.5
-			)
-			.attr("height", (device.directionY ? boardLength  : boardWidth) - margin.top - margin.bottom)
-			.attr("width", (device.directionY ? boardWidth : boardLength) - margin.left - margin.right)
+			// .attr("x", device.directionY
+			// 	? (device.width - boardWidth) * 0.5
+			// 	: 0
+			// )
+			.attr("x", 0)
+			// .attr("y", device.directionY
+			// 	? -lengthOffset
+			// 	: (device.height - boardWidth) * 0.5
+			// )
+			.attr("y", 0)
+			// .attr("height", (device.directionY ? boardLength  : boardWidth) - margin.top - margin.bottom)
+			// .attr("width", (device.directionY ? boardWidth : boardLength) - margin.left - margin.right)
+			// .attr("height", boardLength - margin.top - margin.bottom)
+			// .attr("width", boardWidth - margin.left - margin.right)
+			.attr("height", boardLength)
+			.attr("width", boardWidth)
 			.style("stroke", "#000")
 			.style("stroke-width", 4)
-			.style("fill", "none")
+			.style("fill", "steelblue")
 
 
 	}
