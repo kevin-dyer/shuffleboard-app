@@ -5,7 +5,7 @@ import {
 } from 'app/actions/socket-actions'
 
 import {
-  SET_BOARD_DIMENSIONS
+  ADD_PUCK
 } from 'app/actions/shuffleboard-actions'
 import _ from 'underscore'
 
@@ -23,9 +23,7 @@ const initialState = {
   devices: {},
   socketId: null,
   userCount: 1, //always start with self
-  boardLength: null,
-  boardWidth: null,
-  lengthOffset: null
+  pucks: []
 }
 
 export function boardConfig(state = initialState, action = {}) {
@@ -48,13 +46,16 @@ export function boardConfig(state = initialState, action = {}) {
         userCount: action.userCount
       }
 
-    case SET_BOARD_DIMENSIONS:
+    case ADD_PUCK: {
+      const nextPucks = [...state.pucks]
+      nextPucks.push(action.puck)
+
+      console.log("ADD_PUCK [nextPucks]: ", [...state.pucks, action.puck])
       return {
         ...state,
-        boardLength: action.boardLength,
-        boardWidth: action.boardWidth,
-        lengthOffset: action.lengthOffset
+        pucks: nextPucks
       }
+    }
 
     default:
       return state;
