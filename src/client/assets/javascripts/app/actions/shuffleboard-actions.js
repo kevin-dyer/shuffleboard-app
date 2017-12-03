@@ -1,5 +1,6 @@
 export const SET_BOARD_DIMENSIONS = 'SET_BOARD_DIMENSIONS'
 export const ADD_PUCK = 'ADD_PUCK'
+export const UPDATE_PUCKS = 'UPDATE_PUCKS'
 
 export const TEAM_TYPES = {
 	RED: 'RED',
@@ -71,4 +72,11 @@ export function getLengthOffset (socketId, devices) {
 		.reduce((offset, nextDevice) => {
 			return offset + (nextDevice.directionY ? nextDevice.height : nextDevice.width)
 		},0)
+}
+
+export function updatePucks (pucks) {
+	return {
+		type: UPDATE_PUCKS,
+		pucks
+	}
 }

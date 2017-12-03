@@ -5,7 +5,8 @@ import {
 } from 'app/actions/socket-actions'
 
 import {
-  ADD_PUCK
+  ADD_PUCK,
+  UPDATE_PUCKS
 } from 'app/actions/shuffleboard-actions'
 import _ from 'underscore'
 
@@ -56,6 +57,12 @@ export function boardConfig(state = initialState, action = {}) {
         pucks: nextPucks
       }
     }
+
+    case UPDATE_PUCKS:
+      return {
+        ...state,
+        pucks: action.pucks
+      }
 
     default:
       return state;

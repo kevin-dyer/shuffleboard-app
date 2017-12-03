@@ -1,5 +1,7 @@
 import io from 'socket.io-client'
-
+import {
+	updatePucks
+} from 'app/actions/shuffleboard-actions'
 const uri = 'http://localhost:8080'
 let socket
 
@@ -12,6 +14,8 @@ export const SET_SOCKET_ID = 'SET_SOCKET_ID'
 export const USER_JOINED = 'USER_JOINED'
 export const USER_LEFT = 'USER_LEFT'
 export const UPDATE_USER_COUNT = 'UPDATE_USER_COUNT'
+export const BROADCAST_PUCKS = 'BROADCAST_PUCKS'
+export const RECEIVED_PUCKS = 'RECEIVED_PUCKS'
 
 export const init = (store) => {
 	socket = io(uri)
@@ -31,6 +35,11 @@ export const init = (store) => {
 	socket.on(USER_LEFT, payload => {
 		console.log("USER_LEFT!")
 		store.dispatch(updateUserCount(payload.userCount))
+	})
+
+	socket.on(BROADCAST_PUCKS, payload => {
+		console.log("RECEIVED_PUCKS!")
+		store.dispatch(updatePucks(payload))
 	})
 }
 
@@ -77,4 +86,10 @@ function setSocketId (socketId) {
 		socketId
 	}
 }
+
+export function broadcastPucks(pucks) {
+	emit(BROADCAST_PUCKS, pucks)
+}
+
+
 
