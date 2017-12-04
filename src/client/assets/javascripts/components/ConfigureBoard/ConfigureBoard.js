@@ -22,7 +22,7 @@ export default class ConfigureBoard extends Component {
 	constructor() {
 		super()
 
-		this.state = {touches: []}
+		this.state = {touches: [], touchStatus: null}
 	}
 	componentDidMount() {
 		const bodyElement = d3.select("body")
@@ -37,7 +37,7 @@ export default class ConfigureBoard extends Component {
 			.attr("width", width)
 			.attr("height", height)
 			// .on("touchstart", this.touchHandler)
-   //  	.on("touchmove", this.touchHandler)
+    	.on("touchmove", ::this.touchHandler)
     	// .on("mousedown", this.mouseHandler)
     	.on("mousemove", ::this.mouseHandler);
 
@@ -60,27 +60,31 @@ export default class ConfigureBoard extends Component {
 		}
 	}
 
-	// touchHandler() {
-	// 	d3.event.preventDefault();
- //    d3.event.stopPropagation();
- //    const d = d3.touches(this);
+	touchHandler() {
+		d3.event.preventDefault();
+    d3.event.stopPropagation();
+    const svg = d3.select(".board-svg")
+    const d = d3.touches(svg.node());
+		const stateTouches = this.state.touches
+    console.log("touch d: ", d)
 
- //    console.log("touch d: ", d)
 
+    const touches = stateTouches && stateTouches.length > 0
+    	? stateTouches.map((finger, index) => {
+		    	return [
+		    		...finger,
+		    		d[index]
+		    	]
+		    })
+    	: [d]
 
- //    const touches = this.state.touches.map((finger, index) => {
- //    	return [
- //    		...finger,
- //    		d[index]
- //    	]
- //    })
-
- //    this.setState({
- //    	touches
- //    }, () => {
- //    	this.updateFingerTrace()
- //    })
-	// }
+    this.setState({
+    	touches
+    }, () => {
+    	this.updateFingerTrace()
+    	this.throttledUpdate()
+    })
+	}
 
 	mouseHandler() {
 		d3.event.preventDefault();
@@ -209,6 +213,11 @@ export default class ConfigureBoard extends Component {
     return (
       <div className="configure-board-container">
         <svg className="board-svg"/>
+        <div className="status" style={{
+        	position: 'absolute',
+        	top: 0,
+        	left: 0
+        }}>{this.state.touchStatus}</div>
       </div>
     );
   }

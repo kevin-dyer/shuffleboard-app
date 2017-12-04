@@ -206,11 +206,11 @@ export default class Shuffleboard extends Component {
     const walls = device.directionY
     	? [
     			Bodies.rectangle(boardWidth / 2, 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
-              mask: 'none'
+              // mask: 'none'
            	} }), //TOP
     			Bodies.rectangle(boardWidth - 25, boardLength / 2, 50, boardLength, { isStatic: true, restitution: 1 }), //RIGHT
     			Bodies.rectangle(boardWidth / 2, boardLength - 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
-              mask: 'none'
+              // mask: 'none'
            	} }), //BOTTOM
     			Bodies.rectangle(25, boardLength / 2, 50, boardLength, { isStatic: true, restitution: 1 }), //left side
     		]
@@ -219,14 +219,14 @@ export default class Shuffleboard extends Component {
     			Bodies.rectangle(boardLength - 25, boardWidth / 2, 50, boardWidth, {
     				isStatic: true, restitution: 1,
     				collisionFilter: {
-              mask: 'none'
+              // mask: 'none'
            	}
           }), //RIGHT
     			Bodies.rectangle(boardLength / 2, boardWidth - 25, boardLength, 50, { isStatic: true, restitution: 1 }), //BOTTOM
     			Bodies.rectangle(25, boardWidth / 2, 50, boardWidth, {
     				isStatic: true,
     				collisionFilter: {
-              mask: 'none'
+              // mask: 'none'
            	},
            	restitution: 1
           }), //left side

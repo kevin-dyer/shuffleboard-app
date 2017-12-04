@@ -2,7 +2,7 @@ import io from 'socket.io-client'
 import {
 	updatePucks
 } from 'app/actions/shuffleboard-actions'
-const uri = 'http://localhost:8080'
+const uri = 'https://localhost:8080'
 let socket
 
 

@@ -28,7 +28,10 @@ app.use(webpackDevMiddleware(compiler, {
   stats: {
     colors: true
   },
-  historyApiFallback: true
+  historyApiFallback: true,
+  headers: {
+            'Access-Control-Allow-Origin': '*'
+        }
 }));
 
 app.use(webpackHotMiddleware(compiler));
