@@ -136,14 +136,14 @@ export default class Shuffleboard extends Component {
 			options: {
 				width: getRenderWidth(device, boardWidth, boardLength),
 				height: getRenderHeight(device, boardWidth, boardLength),
-				showAngleIndicator: true,
+				showAngleIndicator: false,
 				pixelRatio: 1,
-				background: '#fafafa',
+				background: 'rgba(0,0,0,0)',
 				wireframeBackground: '#222',
 				hasBounds: false,
 				enabled: true,
-				wireframes: true,
-				showShadows: false
+				wireframes: false,
+				showShadows: true
 			}
 		})
 
@@ -180,29 +180,6 @@ export default class Shuffleboard extends Component {
   //     }
   //   });
 
-  	//TODO: use state.pucks to generate puck elements
-  	const pucks = [
-	  	{
-	  		id: 0,
-	  		x: device.directionY ? boardWidth / 2 : 50,
-	  		y: device.directionY ? 50 : boardWidth / 2
-	  	},
-	  	{
-	  		id: 1,
-	  		x: device.directionY ? boardWidth / 2 + 50 : 50,
-	  		y: device.directionY ? 50 : boardWidth / 2 + 50
-	  	},
-  	]
-  	
-  	this.puckElements = pucks.map(puck =>
-  		Bodies.circle(puck.x, puck.y, 20, {
-  			frictionAir: 0.01,
-  			restitution: 0.9
-  		})
-  	)
-
-    World.add(this.world, this.puckElements);
-
     const walls = device.directionY
     	? [
     			Bodies.rectangle(boardWidth / 2, 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
@@ -212,7 +189,10 @@ export default class Shuffleboard extends Component {
     			Bodies.rectangle(boardWidth / 2, boardLength - 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
               // mask: 'none'
            	} }), //BOTTOM
-    			Bodies.rectangle(25, boardLength / 2, 50, boardLength, { isStatic: true, restitution: 1 }), //left side
+    			Bodies.rectangle(25, boardLength / 2, 50, boardLength, {
+    				isStatic: true,
+    				restitution: 1
+    			}) //left side
     		]
     	: [
     			Bodies.rectangle(boardLength / 2, 25, boardLength, 50, { isStatic: true, restitution: 1 }), //TOP
@@ -234,6 +214,62 @@ export default class Shuffleboard extends Component {
 
     console.log("adding walls: ", walls)
     World.add(this.world, walls)
+
+    const woodBoard = device.directionY
+    	? Bodies.rectangle(boardWidth / 2, boardLength / 2, boardWidth, boardLength, {
+    			isStatic: true,
+    			collisionFilter: {
+            mask: 'none'
+          },
+          render: {
+            sprite: {
+              texture: require('images/wood_grain3.jpg')
+            }
+          }
+        })
+    	: Bodies.rectangle(boardLength / 2, boardWidth / 2, boardLength, boardWidth, {
+    			isStatic: true,
+    			collisionFilter: {
+            mask: 'none'
+          },
+          render: {
+            sprite: {
+              texture: require('images/wood_grain3.jpg')
+            }
+          }
+        })
+    World.add(this.world, woodBoard)
+
+    console.log("woodBoard: ", woodBoard)
+
+    const pucks = [
+	  	{
+	  		id: 0,
+	  		x: device.directionY ? boardWidth / 2 : 50,
+	  		y: device.directionY ? 50 : boardWidth / 2,
+	  		team: 'RED'
+	  	},
+	  	{
+	  		id: 1,
+	  		x: device.directionY ? boardWidth / 2 + 50 : 50,
+	  		y: device.directionY ? 50 : boardWidth / 2 + 50,
+	  		team: 'BLUE'
+	  	},
+  	]
+  	
+  	this.puckElements = pucks.map(puck =>
+  		Bodies.circle(puck.x, puck.y, 35, {
+  			frictionAir: 0.01,
+  			restitution: 0.9,
+  			render: {
+	        sprite: {
+	          texture: puck.team === 'RED' ? require('images/red_puck.png') : require('images/black_puck.png')
+	        }
+	      }
+  		})
+  	)
+
+    World.add(this.world, this.puckElements);
 
     // add mouse control
     this.mouse = Mouse.create(this.renderMatter.canvas)
@@ -415,7 +451,7 @@ export default class Shuffleboard extends Component {
 			xTarget -= lengthOffset
 		}
 
-
+		//TODO: may need to put back
 		g.attr("transform", `translate(${xTarget - xOrigin}, ${yTarget - yOrigin}) rotate(${degOffset}, ${xOrigin}, ${yOrigin})`)
 
 		//Board
@@ -531,8 +567,15 @@ export default class Shuffleboard extends Component {
 	}
 
   render() {
+  	const {
+			boardConfig: {
+				devices = {},
+				socketId
+			}
+		} = this.props
+		const device = devices[socketId] || {}
     return (
-      <div className="shuffleboard-container" id="shuffleboard-container">
+      <div className={`shuffleboard-container ${device.directionY ? '' : ' sideways'}`} id="shuffleboard-container">
       	<div id="shuffleboard-canvas">
       	</div>
       </div>

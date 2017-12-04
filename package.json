@@ -28,7 +28,7 @@
     "clean:build": "rimraf build",
     "build:html": "node ./bin/buildHtml.js",
     "prestart": "npm run clean:build",
-    "start": "webpack-dashboard -c cyan -- node dev-server.js",
+    "start": "webpack-dashboard -c cyan -- node dev-server.js --host 0.0.0.0",
     "prebuild": "npm run clean:build",
     "build": "cross-env NODE_ENV=production webpack --config ./config/webpack.config.production.js --progress",
     "postbuild": "npm run build:html",

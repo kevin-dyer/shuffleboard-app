@@ -17,7 +17,7 @@ const logger = createLogger();
 
 const middlewares = [
   promiseMiddleware,
-  logger,
+  // logger,
   require('redux-immutable-state-invariant')(),
   thunk
 ];
@@ -30,7 +30,7 @@ const getDebugSessionKey = function () {
 
 const enhancer = compose(
   applyMiddleware(...middlewares),
-  window.devToolsExtension ? window.devToolsExtension() : DevTools.instrument(),
+  // window.devToolsExtension ? window.devToolsExtension() : DevTools.instrument(),
   // Optional. Lets you write ?debug_session=<key> in address bar to persist debug sessions
   persistState(getDebugSessionKey())
 );
