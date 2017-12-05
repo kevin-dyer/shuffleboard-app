@@ -154,6 +154,10 @@ export default class Shuffleboard extends Component {
 		this.runner = Runner.create()
 		Runner.run(this.runner, this.engine)
 
+		//NOTE: img 1500 w X 744 h
+		const woodDim = {width: 1500, height: 744}
+		const deviceRatio = device.directionY ? device.height / device.width : device.width / device.height
+		const woodIsLonger = woodDim.width / woodDim.height > deviceRatio
  		const woodBoard = device.directionY
     	? Bodies.rectangle(boardWidth / 2, boardLength / 2, boardWidth, boardLength, {
     			isStatic: true,
@@ -162,7 +166,9 @@ export default class Shuffleboard extends Component {
           },
           render: {
             sprite: {
-              texture: require('images/wood_grain3.jpg')
+              texture: require('images/wood_grain3.jpg'),
+             	xScale: woodIsLonger ? device.width / woodDim.height : device.height / woodDim.width,
+             	yScale: woodIsLonger ? device.width / woodDim.height : device.height / woodDim.width
             }
           }
         })
@@ -173,10 +179,13 @@ export default class Shuffleboard extends Component {
           },
           render: {
             sprite: {
-              texture: require('images/wood_grain3.jpg')
+              texture: require('images/wood_grain3.jpg'),
+              xScale: device.width / woodDim.height,
+              // yScale: device.height / woodDim.width
             }
           }
         })
+    Body.rotate(woodBoard, device.directionY ? Math.PI / 2 : 0)
     World.add(this.world, woodBoard)
 
 
@@ -187,7 +196,7 @@ export default class Shuffleboard extends Component {
         mask: 'none'
      	},
      	render: {
-     		strokeStyle: 'rgba(0,0,0,0.4)',
+     		strokeStyle: 'rgba(0,0,0,0.2)',
      		fillStyle: 'rgba(0,0,0,0)',
      		lineWidth: 5
      	}
@@ -196,8 +205,8 @@ export default class Shuffleboard extends Component {
     const scoreLabels = [null, null, null]
     	.map((scoreBox, index) => {
     		return Bodies.rectangle(
-    			device.directionY ? device.width / 2 : index * scoreBoxHeight + 0.5 * scoreBoxHeight,
-    			device.directionY ? index * scoreBoxHeight + 0.5 * scoreBoxHeight : device.height / 2,
+    			device.directionY ? (boardWidth / 2) : (index * scoreBoxHeight + 0.5 * scoreBoxHeight),
+    			device.directionY ? (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : (boardWidth / 2),
     			device.directionY ? boardWidth : scoreBoxHeight,
     			device.directionY ? scoreBoxHeight : boardWidth,
     			{
@@ -215,10 +224,10 @@ export default class Shuffleboard extends Component {
 				Body.rotate(body, device.directionY ? Math.PI : Math.PI / 2)
 				return body
 			})
-		const scoreBoxes = scoreLabels.map(scoreBox => {
+		const scoreBoxes = scoreLabels.map((scoreBox, index) => {
 			return Bodies.rectangle(
 				scoreBox.position.x,
-				scoreBox.position.y,
+				device.directionY ? (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : (boardWidth / 2),
 				device.directionY ? boardWidth : scoreBoxHeight,
     		device.directionY ? scoreBoxHeight : boardWidth,
     		{
@@ -231,7 +240,7 @@ export default class Shuffleboard extends Component {
     	.map((scoreBox, index) => {
     		return Bodies.rectangle(
     			device.directionY ? device.width / 2 : boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight),
-    			device.directionY ? boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : device.height / 2,
+    			device.directionY ? boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : (boardWidth / 2),
     			device.directionY ? boardWidth : scoreBoxHeight,
     			device.directionY ? scoreBoxHeight : boardWidth,
     			{
@@ -302,33 +311,7 @@ export default class Shuffleboard extends Component {
 
 
     //Pucks
-   //  const pucks = [
-	  // 	{
-	  // 		id: 0,
-	  // 		x: device.directionY ? boardWidth / 2 : 50,
-	  // 		y: device.directionY ? 50 : boardWidth / 2,
-	  // 		team: TEAM_TYPES.RED
-	  // 	},
-	  // 	{
-	  // 		id: 1,
-	  // 		x: device.directionY ? boardWidth / 2 + 50 : 50,
-	  // 		y: device.directionY ? 50 : boardWidth / 2 + 50,
-	  // 		team: TEAM_TYPES.BLUE
-	  // 	},
-  	// ]
   	const puckRad = 35
-  	
-  	// this.puckElements = pucks.map(puck =>
-  	// 	Bodies.circle(puck.x, puck.y, puckRad, {
-  	// 		frictionAir: 0.01,
-  	// 		restitution: 0.9,
-  	// 		render: {
-	  //       sprite: {
-	  //         texture: puck.team === 'RED' ? require('images/red_puck.png') : require('images/black_puck.png')
-	  //       }
-	  //     }
-  	// 	})
-  	// )
 
   	const redPucks = [null, null, null, null]
   		.map((puck, index) => {
@@ -350,7 +333,7 @@ export default class Shuffleboard extends Component {
   			}
 
   			return Bodies.circle(x, y, puckRad, {
-	  			frictionAir: 0.01,
+	  			frictionAir: 0.03,
 	  			restitution: 0.9,
 	  			render: {
 		        sprite: {
@@ -368,23 +351,15 @@ export default class Shuffleboard extends Component {
   			let y = 0
 
   			if (device.directionY && !device.inverted) {
-  				// x = wallHeight - puckRad
-  				// y = (index + 0.5) * scoreBoxHeight
   				x = boardWidth - wallHeight + puckRad
   				y = boardLength - (index + 0.5) * scoreBoxHeight
   			} else if (device.directionY && device.inverted) {
-  				// x = boardWidth - wallHeight + puckRad
-  				// y = boardLength - (index + 0.5) * scoreBoxHeight
   				x = wallHeight - puckRad
   				y = (index + 0.5) * scoreBoxHeight
   			} else if (!device.directionY && !device.inverted) {
-  				// x = (index + 0.5) * scoreBoxHeight
-  				// y = device.height - wallHeight + puckRad
   				x = boardLength - (index + 0.5) * scoreBoxHeight
   				y = wallHeight - puckRad
   			} else if (!device.directionY && device.inverted) {
-  				// x = boardLength - (index + 0.5) * scoreBoxHeight
-  				// y = wallHeight - puckRad
   				x = (index + 0.5) * scoreBoxHeight
   				y = device.height - wallHeight + puckRad
   			}
@@ -456,7 +431,10 @@ export default class Shuffleboard extends Component {
         }
     });
 
-		shuffleboardCanvas.style = `transform: translate(${device.directionY ? 0 : -lengthOffset}px, ${device.directionY ? -lengthOffset : 0}px);`
+		shuffleboardCanvas.style = `transform: translate(\
+			${device.directionY ? (device.width - boardWidth) / 2 : -lengthOffset}px,\
+			${device.directionY ? -lengthOffset : (device.height - boardWidth) / 2}px\
+		);`
 	}
 
 	componentDidUpdate({boardConfig: {pucks: oldPucks}}) {
