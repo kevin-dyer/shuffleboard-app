@@ -154,68 +154,7 @@ export default class Shuffleboard extends Component {
 		this.runner = Runner.create()
 		Runner.run(this.runner, this.engine)
 
-		// const stack = Composites.stack(20, 20, 10, 5, 0, 0, function(x, y) {
-  //     let sides = Math.round(Common.random(1, 8));
-
-  //     // triangles can be a little unstable, so avoid until fixed
-  //     sides = (sides === 3) ? 4 : sides;
-
-  //     // round the edges of some bodies
-  //     var chamfer = null;
-  //     if (sides > 2 && Common.random() > 0.7) {
-  //         chamfer = {
-  //             radius: 10
-  //         };
-  //     }
-
-  //     switch (Math.round(Common.random(0, 1))) {
-  //     case 0:
-  //         if (Common.random() < 0.8) {
-  //             return Bodies.rectangle(x, y, Common.random(25, 50), Common.random(25, 50), { chamfer: chamfer });
-  //         } else {
-  //             return Bodies.rectangle(x, y, Common.random(80, 120), Common.random(25, 30), { chamfer: chamfer });
-  //         }
-  //     case 1:
-  //         return Bodies.polygon(x, y, sides, Common.random(25, 50), { chamfer: chamfer });
-  //     }
-  //   });
-
-    const walls = device.directionY
-    	? [
-    			Bodies.rectangle(boardWidth / 2, 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
-              // mask: 'none'
-           	} }), //TOP
-    			Bodies.rectangle(boardWidth - 25, boardLength / 2, 50, boardLength, { isStatic: true, restitution: 1 }), //RIGHT
-    			Bodies.rectangle(boardWidth / 2, boardLength - 25, boardWidth, 50, { isStatic: true, restitution: 1, collisionFilter: {
-              // mask: 'none'
-           	} }), //BOTTOM
-    			Bodies.rectangle(25, boardLength / 2, 50, boardLength, {
-    				isStatic: true,
-    				restitution: 1
-    			}) //left side
-    		]
-    	: [
-    			Bodies.rectangle(boardLength / 2, 25, boardLength, 50, { isStatic: true, restitution: 1 }), //TOP
-    			Bodies.rectangle(boardLength - 25, boardWidth / 2, 50, boardWidth, {
-    				isStatic: true, restitution: 1,
-    				collisionFilter: {
-              // mask: 'none'
-           	}
-          }), //RIGHT
-    			Bodies.rectangle(boardLength / 2, boardWidth - 25, boardLength, 50, { isStatic: true, restitution: 1 }), //BOTTOM
-    			Bodies.rectangle(25, boardWidth / 2, 50, boardWidth, {
-    				isStatic: true,
-    				collisionFilter: {
-              // mask: 'none'
-           	},
-           	restitution: 1
-          }), //left side
-    		]
-
-    console.log("adding walls: ", walls)
-    World.add(this.world, walls)
-
-    const woodBoard = device.directionY
+ 		const woodBoard = device.directionY
     	? Bodies.rectangle(boardWidth / 2, boardLength / 2, boardWidth, boardLength, {
     			isStatic: true,
     			collisionFilter: {
@@ -240,7 +179,128 @@ export default class Shuffleboard extends Component {
         })
     World.add(this.world, woodBoard)
 
-    console.log("woodBoard: ", woodBoard)
+
+    //Score boxes
+    const scoreBoxProps = {
+    	isStatic: true,
+			collisionFilter: {
+        mask: 'none'
+     	},
+     	render: {
+     		strokeStyle: 'rgba(0,0,0,0.4)',
+     		fillStyle: 'rgba(0,0,0,0)',
+     		lineWidth: 5
+     	}
+    }
+    const scoreBoxHeight = 100
+    const scoreLabels = [null, null, null]
+    	.map((scoreBox, index) => {
+    		return Bodies.rectangle(
+    			device.directionY ? device.width / 2 : index * scoreBoxHeight + 0.5 * scoreBoxHeight,
+    			device.directionY ? index * scoreBoxHeight + 0.5 * scoreBoxHeight : device.height / 2,
+    			device.directionY ? boardWidth : scoreBoxHeight,
+    			device.directionY ? scoreBoxHeight : boardWidth,
+    			{
+						...scoreBoxProps,
+						render: {
+							...scoreBoxProps.render,
+							sprite: {
+								texture: require(`images/number_${3 - index}.png`)
+							}
+						}
+					}
+				)
+			})
+			.map(body => {
+				Body.rotate(body, device.directionY ? 0 : Math.PI / 2)
+				return body
+			})
+		const scoreBoxes = scoreLabels.map(scoreBox => {
+			return Bodies.rectangle(
+				scoreBox.position.x,
+				scoreBox.position.y,
+				device.directionY ? boardWidth : scoreBoxHeight,
+    		device.directionY ? scoreBoxHeight : boardWidth,
+    		{
+					...scoreBoxProps
+				}
+			)
+		})
+
+		const oppScoreLabels = [null, null, null]
+    	.map((scoreBox, index) => {
+    		return Bodies.rectangle(
+    			device.directionY ? device.width / 2 : boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight),
+    			device.directionY ? boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : device.height / 2,
+    			device.directionY ? boardWidth : scoreBoxHeight,
+    			device.directionY ? scoreBoxHeight : boardWidth,
+    			{
+						...scoreBoxProps,
+						render: {
+							...scoreBoxProps.render,
+							sprite: {
+								texture: require(`images/number_${3 - index}.png`)
+							}
+						}
+					}
+				)
+			})
+			.map(body => {
+				Body.rotate(body, device.directionY ? Math.PI : -Math.PI / 2)
+				return body
+			})
+		const oppScoreBoxes = oppScoreLabels.map(scoreBox => {
+			return Bodies.rectangle(
+				scoreBox.position.x,
+				scoreBox.position.y,
+				device.directionY ? boardWidth : scoreBoxHeight,
+    		device.directionY ? scoreBoxHeight : boardWidth,
+    		{
+					...scoreBoxProps
+				}
+			)
+		})
+
+		World.add(this.world, [
+			...scoreLabels,
+			...scoreBoxes,
+			...oppScoreLabels,
+			...oppScoreBoxes
+		])
+
+
+    const wallProps = {
+    	isStatic: true,
+			restitution: 1,
+			collisionFilter: {
+        // mask: 'none'
+     	},
+     	render: {
+     		fillStyle: '#222222'
+     	}
+    }
+    const wallHeight = 40
+    const walls = device.directionY
+    	? [
+    			Bodies.rectangle(boardWidth - 0.5 * wallHeight, boardLength / 2, wallHeight, boardLength, {
+	    			...wallProps
+          }), //RIGHT
+    			Bodies.rectangle(0.5 * wallHeight, boardLength / 2, wallHeight, boardLength, {
+    				...wallProps
+    			}) //left side
+    		]
+    	: [
+    			Bodies.rectangle(boardLength / 2, 0.5 * wallHeight, boardLength, wallHeight, {
+    				...wallProps
+    			}), //TOP
+    			Bodies.rectangle(boardLength / 2, boardWidth - 0.5 * wallHeight, boardLength, wallHeight, {
+    				...wallProps
+    			}) //BOTTOM
+    		]
+
+    World.add(this.world, walls)
+
+
 
     const pucks = [
 	  	{
@@ -389,7 +449,7 @@ export default class Shuffleboard extends Component {
 
 		if (pucks !== oldPucks){
 			this.puckElements.forEach((puck, index) => {
-				console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
+				// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
 				Body.setAngle(puck, pucks[index].angle)
 				Body.setPosition(puck, pucks[index].position)
 				Body.setVelocity(puck, pucks[index].velocity)
