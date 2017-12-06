@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
 import { Link, withRouter } from 'react-router';
+import IconButton from 'material-ui/IconButton'
+import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
+
 import './shuffleboard.scss';
 import moment from 'moment'
 import _ from 'underscore'
@@ -156,37 +159,40 @@ export default class Shuffleboard extends Component {
 
 		//NOTE: img 1500 w X 744 h
 		const woodDim = {width: 1500, height: 744}
-		const deviceRatio = device.directionY ? device.height / device.width : device.width / device.height
-		const woodIsLonger = woodDim.width / woodDim.height > deviceRatio
- 		const woodBoard = device.directionY
-    	? Bodies.rectangle(boardWidth / 2, boardLength / 2, boardWidth, boardLength, {
-    			isStatic: true,
-    			collisionFilter: {
-            mask: 'none'
-          },
-          render: {
-            sprite: {
-              texture: require('images/wood_grain3.jpg'),
-             	xScale: woodIsLonger ? device.width / woodDim.height : device.height / woodDim.width,
-             	yScale: woodIsLonger ? device.width / woodDim.height : device.height / woodDim.width
-            }
-          }
-        })
-    	: Bodies.rectangle(boardLength / 2, boardWidth / 2, boardLength, boardWidth, {
-    			isStatic: true,
-    			collisionFilter: {
-            mask: 'none'
-          },
-          render: {
-            sprite: {
-              texture: require('images/wood_grain3.jpg'),
-              xScale: device.width / woodDim.height,
-              // yScale: device.height / woodDim.width
-            }
-          }
-        })
-    Body.rotate(woodBoard, device.directionY ? Math.PI / 2 : 0)
-    World.add(this.world, woodBoard)
+		// const deviceRatio = device.directionY ? device.height / device.width : device.width / device.height
+		// const woodIsLonger = woodDim.width / woodDim.height > deviceRatio
+
+		// console.log("woodIsLonger: ", woodIsLonger)
+		// let boardScales
+		// const yScale = (device.directionY ? boardLength : boardWidth) / (device.directionY ? woodDim.width : woodDim.height)
+		// const xScale = (device.directionY ? boardWidth : boardLength) / (device.directionY ? woodDim.height : woodDim.width)
+		// if (yScale > xScale) {
+		// 	boardScales = {yScale: yScale * 1.5}
+		// } else {
+		// 	boardScales = {xScale: xScale * 1.5}
+		// }
+
+		// console.log("boardScales: ", boardScales, ", xScale: ", xScale, ", yScale: ", yScale, ", boardLength: ", boardLength, ", yScale * woodDim.width: ", yScale * woodDim.width)
+ 	// 	const woodBoard = Bodies.rectangle(
+		// 	device.directionY ? boardWidth / 2 : boardLength / 2,
+		// 	device.directionY ? boardLength / 2 : boardWidth / 2,
+		// 	device.directionY ? boardWidth : boardLength,
+		// 	device.directionY ? boardLength : boardWidth,
+		// 	{
+  // 			isStatic: true,
+  // 			collisionFilter: {
+  //         mask: 'none'
+  //       },
+  //       render: {
+  //         sprite: {
+  //           texture: require('images/wood_grain3.jpg'),
+  //          	...boardScales
+  //         }
+  //       }
+  //   	}
+  //   )
+  //   Body.rotate(woodBoard, device.directionY ? Math.PI / 2 : 0)
+    // World.add(this.world, woodBoard)
 
 
     //Score boxes
@@ -239,7 +245,7 @@ export default class Shuffleboard extends Component {
 		const oppScoreLabels = [null, null, null]
     	.map((scoreBox, index) => {
     		return Bodies.rectangle(
-    			device.directionY ? device.width / 2 : boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight),
+    			device.directionY ? boardWidth / 2 : boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight),
     			device.directionY ? boardLength - (index * scoreBoxHeight + 0.5 * scoreBoxHeight) : (boardWidth / 2),
     			device.directionY ? boardWidth : scoreBoxHeight,
     			device.directionY ? scoreBoxHeight : boardWidth,
@@ -269,6 +275,8 @@ export default class Shuffleboard extends Component {
 				}
 			)
 		})
+
+		console.log("oppScoreBoxes: ", oppScoreBoxes)
 
 		World.add(this.world, [
 			...scoreLabels,
@@ -403,6 +411,8 @@ export default class Shuffleboard extends Component {
     let isListening = false
     Events.on(this.mouseConstraint, "mousedown", (e) => {
     	isListening = true
+
+    	console.log("mousedown, should fire action ")
     })
     Events.on(this.mouseConstraint, "mousemove", (e) => {
     	// console.log("mousemove e: ", e.source.mouse)
@@ -431,10 +441,21 @@ export default class Shuffleboard extends Component {
         }
     });
 
-		shuffleboardCanvas.style = `transform: translate(\
+		shuffleboardCanvas.style = `\
+		transform: translate(\
 			${device.directionY ? (device.width - boardWidth) / 2 : -lengthOffset}px,\
 			${device.directionY ? -lengthOffset : (device.height - boardWidth) / 2}px\
-		);`
+		);\
+		width: ${device.directionY ? (boardWidth + 'px') : 'auto'};\
+		height: ${device.directionY ? 'auto' : (boardWidth + 'px')};`
+
+		// request fullscreen mode
+		// console.log("requesting fullscreen: ",shuffleboardCanvas.requestFullScreen)
+		// if (shuffleboardCanvas.requestFullScreen) {
+		// 	shuffleboardCanvas.requestFullScreen()
+		// } else if (shuffleboardCanvas.webkitRequestFullscreen) {
+		// 	shuffleboardCanvas.webkitRequestFullscreen()
+		// }
 	}
 
 	componentDidUpdate({boardConfig: {pucks: oldPucks}}) {
@@ -460,14 +481,43 @@ export default class Shuffleboard extends Component {
 			boardConfig: {
 				devices = {},
 				socketId
-			}
+			},
+			router
 		} = this.props
 		const device = devices[socketId] || {}
     return (
       <div className={`shuffleboard-container ${device.directionY ? '' : ' sideways'}`} id="shuffleboard-container">
       	<div id="shuffleboard-canvas">
       	</div>
+
+      	{/*<div className="menu">
+      		<IconButton
+      			onTouchTap={e => {
+							console.log("onClick called! e: ", e)
+							toggleFullScreen()
+	      		}}
+	      		style={{cursor:'pointer'}}
+	      	>
+      			<FullScrIcon color="#FFF"/>
+      		</IconButton>
+      	</div>*/}
       </div>
     );
+  }
+}
+
+function toggleFullScreen() {
+  var doc = window.document;
+  // var docEl = doc.documentElement;
+  const docEl = document.getElementById('shuffleboard-canvas')
+
+  var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+  var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+  if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+    requestFullScreen.call(docEl);
+  }
+  else {
+    cancelFullScreen.call(doc);
   }
 }

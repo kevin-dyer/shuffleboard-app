@@ -1,7 +1,33 @@
 .shuffleboard-container {
 	position: relative;
 	overflow: hidden;
-	width: 100%/*;
+	width: 100%;
+	height: 100%;
+	background-color: #222;
+
+
+	//for FullScreen
+	#shuffleboard-canvas:-webkit-full-screen {
+	  width: 100%;
+	  height: 100%;
+	}
+
+	.menu {
+		position: absolute;
+		top: 0px;
+		right: 0px;
+	}
+
+	#shuffleboard-canvas {
+		background: url("/images/wood_grain3_90deg.jpeg") 0 0 repeat;
+	}
+
+	&.sideways {
+		#shuffleboard-canvas {
+			background: url("/images/wood_grain3.jpg") 0 0 repeat;
+		}
+	}
+	/*;
 	height: 100%*/;
 	/*background-image: url("/images/wood_grain3.jpg");*/
 

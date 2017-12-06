@@ -94,4 +94,12 @@ export function broadcastPucks(pucks) {
 }
 
 
+//IDK if i like the polling done here, id rather do it in shuffleboard where i have access to pucks
+// and i can tell whether they are still moving
+// let broadcastPoll = false
+// export function startBroadcastingPucks () {
+// 	broadcastPoll = setInterval()
+// }
+
+
 

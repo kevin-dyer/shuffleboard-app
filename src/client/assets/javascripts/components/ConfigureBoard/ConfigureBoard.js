@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import {connect} from 'react-redux';
 import { Link, withRouter } from 'react-router';
 // import {withRouter} from 'react-router-dom';
+import IconButton from 'material-ui/IconButton'
+import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
 import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
