@@ -33,6 +33,8 @@ import {
 	Body,
 	Events
 } from 'matter-js'
+require('images/wood_grain3.jpg')
+require('images/wood_grain3_side.jpg')
 
 
 function getRenderWidth (device, boardWidth, boardLength) {
@@ -85,13 +87,25 @@ function getRenderYMax (device, boardWidth, boardLength, lengthOffset) {
 
 function generatePuckMessage(pucks = [], device) {
 	//NOTE: will need to transform everything depending on device.directionY
-	console.log("generatePuckMessage pucks: ", pucks)
+	// console.log("generatePuckMessage pucks: ", pucks)
 	return pucks.map(puck => ({
 		angle: puck.angle,
 		position: puck.position,
 		velocity: puck.velocity
 	}))
 }
+
+function isBoardActive (pucks = []) {
+	//TODO: should also consider if a puck has left the board area
+	return pucks.reduce((isActive, puck) => {
+		if (isActive) {
+			return isActive
+		}
+
+		return (Math.abs(puck.velocity.x) + Math.abs(puck.velocity.y)) > 0.01
+	}, false)
+}
+
 
 const stateToProps = ({boardConfig}) => ({
 	boardConfig
@@ -409,10 +423,35 @@ export default class Shuffleboard extends Component {
 
     //Add Mouse move event listener
     let isListening = false
+    const pollInterval = 500
     Events.on(this.mouseConstraint, "mousedown", (e) => {
     	isListening = true
+    	
+    	//TODO: need to clean this up on component received props - look for updates to pucks to 
+    	if (this.broadcastPoll) {
+    		clearInterval(this.broadcastPoll)
+    	}
+    	this.broadcastPoll = setInterval(() => {
+    		// console.log("broadcastPoll called")
 
+    		//TODO: check if balls are moving, if not, clear interval
+    		const boardIsActive = isBoardActive(this.puckElements)
+
+    		// console.log("boardIsActive: ", boardIsActive, ", this.puckElements: ", this.puckElements)
+
+    		if (!boardIsActive) {
+    			console.log("board is no longer active, clearing Interval")
+    			clearInterval(this.broadcastPoll)
+    			return
+    		}
+    		if (this.puckElements) {
+	    		const nextPucks = generatePuckMessage(this.puckElements, device)
+
+		    	broadcastPucks(nextPucks)
+	    	}
+    	}, pollInterval)
     	console.log("mousedown, should fire action ")
+
     })
     Events.on(this.mouseConstraint, "mousemove", (e) => {
     	// console.log("mousemove e: ", e.source.mouse)
@@ -470,6 +509,11 @@ export default class Shuffleboard extends Component {
 				Body.setPosition(puck, pucks[index].position)
 				Body.setVelocity(puck, pucks[index].velocity)
 			})
+
+			//stop broadcasting
+
+			// console.log("clearing Interval this.broadcastPoll: ", this.broadcastPoll)
+			clearInterval(this.broadcastPoll)
 		}
 	}
 
