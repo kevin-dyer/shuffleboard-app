@@ -5,7 +5,8 @@ import {
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
 // const uri = `http://${window.location.hostname}:8080`
-const uri = `http://${window.location.hostname}:65080`
+const uri = 'http://localhost'
+// const uri = `http://${window.location.hostname}:65080`
 let socket
 
 
