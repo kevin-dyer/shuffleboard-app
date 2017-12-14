@@ -22,7 +22,8 @@ export const BROADCAST_PUCKS = 'BROADCAST_PUCKS'
 export const RECEIVED_PUCKS = 'RECEIVED_PUCKS'
 
 export const init = (store) => {
-	socket = io(uri)
+	// socket = io(uri)
+	socket = io()
 		.on('connect', function() {
 			store.dispatch(setSocketId(this.id))
 		})
