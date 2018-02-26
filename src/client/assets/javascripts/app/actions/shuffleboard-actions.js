@@ -63,12 +63,19 @@ export function getBoardWidth (devices) {
 
 export function getLengthOffset (socketId, devices) {
 	const device = devices[socketId]
+
 	return Object.values(devices)
-		.filter(dev =>
-			dev &&
-			dev.timestamp &&
-			parseInt(dev.timestamp) < parseInt(device.timestamp)
-		)
+		.filter(dev => {
+			if (!device.inverted) {
+				return dev &&
+					dev.timestamp &&
+					parseInt(dev.timestamp) < parseInt(device.timestamp)
+			} else {
+				return dev &&
+					dev.timestamp &&
+					parseInt(dev.timestamp) > parseInt(device.timestamp)
+			}
+		})
 		.reduce((offset, nextDevice) => {
 			return offset + (nextDevice.directionY ? nextDevice.height : nextDevice.width)
 		},0)

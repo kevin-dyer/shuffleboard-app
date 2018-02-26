@@ -4,8 +4,8 @@ import {
 } from 'app/actions/shuffleboard-actions'
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
-// const uri = `http://${window.location.hostname}:8080`
-const uri = 'http://localhost'
+const uri = `http://${window.location.hostname}:8080`
+// const uri = 'http://localhost'
 // const uri = `http://${window.location.hostname}:65080`
 let socket
 
@@ -22,8 +22,9 @@ export const BROADCAST_PUCKS = 'BROADCAST_PUCKS'
 export const RECEIVED_PUCKS = 'RECEIVED_PUCKS'
 
 export const init = (store) => {
-	// socket = io(uri)
-	socket = io()
+	//TODO: switch back when deploy to Heroku
+	socket = io(uri)
+	// socket = io()
 		.on('connect', function() {
 			store.dispatch(setSocketId(this.id))
 		})
