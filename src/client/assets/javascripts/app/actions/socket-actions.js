@@ -1,6 +1,8 @@
 import io from 'socket.io-client'
 import {
-	updatePucks
+	updatePucks,
+	puckStateToMessage,
+	puckMessageToState
 } from 'app/actions/shuffleboard-actions'
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
@@ -43,9 +45,17 @@ export const init = (store) => {
 		store.dispatch(updateUserCount(payload.userCount))
 	})
 
+	//TODO: Prevent this from fireing if originated from self
 	socket.on(BROADCAST_PUCKS, payload => {
-		console.log("RECEIVED_PUCKS!")
-		store.dispatch(updatePucks(payload))
+		const {boardConfig: {devices, socketId}} = store.getState()
+		const device = devices[socketId]
+		
+		console.log("RECEIVED_PUCKS! device from state: ", device)
+
+		//NOTE: need to modify the payload based on the current device directionY and inverted
+		//TODO: transform payload here, get state from store.getState()
+		const nextPucks = puckMessageToState(payload, device)
+		store.dispatch(updatePucks(nextPucks))
 	})
 }
 
@@ -93,8 +103,14 @@ function setSocketId (socketId) {
 	}
 }
 
-export function broadcastPucks(pucks) {
-	emit(BROADCAST_PUCKS, pucks)
+export function broadcastPucks(pucks, device) {
+
+	//TODO: modify pucks here based on current device
+	console.log("STATE broadcastPucks first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
+	const outgoingPucks = puckStateToMessage(pucks, device)
+
+	console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
+	emit(BROADCAST_PUCKS, outgoingPucks)
 }
 
 

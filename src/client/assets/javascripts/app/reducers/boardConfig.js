@@ -6,7 +6,11 @@ import {
 
 import {
   ADD_PUCK,
-  UPDATE_PUCKS
+  UPDATE_PUCKS,
+  // CANCEL_MODAL,
+  ACCEPT_MODAL,
+  SHOW_START_GAME_MODAL,
+  SHOW_GAME_OVER_MODAL
 } from 'app/actions/shuffleboard-actions'
 import _ from 'underscore'
 
@@ -20,11 +24,16 @@ const mergeBoardConfigs = (devices, device) => {
   }
 }
 
+//Need gamestate to hold score and whos turn it is and is game over
 const initialState = {
   devices: {},
   socketId: null,
   userCount: 1, //always start with self
-  pucks: []
+  pucks: [],
+  dialog: {
+    title: '',
+    accepted: true
+  }
 }
 
 export function boardConfig(state = initialState, action = {}) {
@@ -62,6 +71,54 @@ export function boardConfig(state = initialState, action = {}) {
       return {
         ...state,
         pucks: action.pucks
+      }
+
+
+
+      //TODO: change these generic actions out for specific ones
+      // let GameDialog component determine which action to ifre
+    // case CANCEL_MODAL:
+    //   return {
+    //     ...state
+    //   }
+
+    // case ACCEPT_MODAL:
+    //   return {
+    //     ...state,
+    //     dialog: {
+    //       ...dialog,
+    //       accepted: true
+    //     }
+    //   }
+
+    case SHOW_START_GAME_MODAL:
+      return {
+        ...state,
+        dialog: {
+          ...state.dialog,
+          accepted: false,
+          title: 'Ready to start the game?',
+          body: 'Red goes first'
+        }
+      }
+
+    case SHOW_GAME_OVER_MODAL:
+      return {
+        ...state,
+        dialog: {
+          ...state.dialog,
+          accepted: false,
+          title: `Game Over. ${action.team} won!`
+        }
+      }
+
+    case ACCEPT_MODAL:
+      return {
+        ...state,
+        dialog: {
+          ...state.dialog,
+          accepted: true
+        }
       }
 
     default:

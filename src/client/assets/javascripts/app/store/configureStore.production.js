@@ -18,5 +18,5 @@ export default function configureStore(initialState) {
   // return enhancer(rootReducer, initialState);
 
   // return createStore(rootReducer, initialState, enhancer)
-  return createStore(rootReducer, initialState, enhancer)
+  return createStore(rootReducer, initialState, enhancer, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__())
 }
