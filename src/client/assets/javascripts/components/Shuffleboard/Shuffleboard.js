@@ -11,7 +11,6 @@ import GameDialog from '../GameDialog'
 import './shuffleboard.scss';
 import moment from 'moment'
 import _ from 'underscore'
-// import * as d3 from 'd3'
 import {
 	startTurn,
 	showStartGameModal,
@@ -33,7 +32,6 @@ const stateToProps = ({boardConfig}) => ({
 @connect(stateToProps, {
 	startTurn,
 	showStartGameModal,
-	// broadcastPucks,
 	initBoard
 })
 @withRouter
@@ -51,127 +49,25 @@ export default class Shuffleboard extends Component {
 			router,
 			startTurn,
 			showStartGameModal,
-			// broadcastPucks,
 			initBoard
 		} = this.props
-
-		console.log("Shuffleboard componentDidMount")
 		const boardLength = getBoardLength(devices)
 		const boardWidth = getBoardWidth(devices)
 		const lengthOffset = getLengthOffset(socketId, devices)
 		const device = devices[socketId]
 		const shuffleboardCanvas = document.getElementById('shuffleboard-canvas')
 
-		console.log("componentDidMount in Shuffleboard")
+
+		console.log("boardWidth: ", boardWidth)
 		//move into component will receive props
 		if (_.isEmpty(devices)) {
 			return router.push('/orientation')
 		}
 
 		initBoard(shuffleboardCanvas)
-
-
-		// //TODO: replace
-		// // display modal that kicks off first turn
-		// // call action
-
 		showStartGameModal()
-
-
-		// //Pucks
-		// const puckRad = 35
-		// const wallHeight = 40
-		// const scoreBoxHeight = 100
-
-		// // const redPucks = [null, null, null, null]
-		// // 	.map((puck, index) => {
-		// // 		let x = 0
-		// // 		let y = 0
-
-		// // 		if (device.directionY && !device.inverted) {
-		// // 			x = wallHeight - puckRad
-		// // 			y = (index + 0.5) * scoreBoxHeight
-		// // 		} else if (device.directionY && device.inverted) {
-		// // 			x = boardWidth - wallHeight + puckRad
-		// // 			y = boardLength - (index + 0.5) * scoreBoxHeight
-		// // 		} else if (!device.directionY && !device.inverted) {
-		// // 			x = (index + 0.5) * scoreBoxHeight
-		// // 			y = device.height - wallHeight + puckRad
-		// // 		} else if (!device.directionY && device.inverted) {
-		// // 			x = boardLength - (index + 0.5) * scoreBoxHeight
-		// // 			y = wallHeight - puckRad
-		// // 		}
-
-		// // 		return Bodies.circle(x, y, puckRad, {
-		// // 			frictionAir: 0.03,
-		// // 			restitution: 0.9,
-		// // 			render: {
-		// //         sprite: {
-		// //           texture: require('images/red_puck.png')
-		// //         }
-		// //       }
-		// // 		})
-		// // 	})
-		// // const bluePucks = [null, null, null, null]
-		// // 	.map((puck, index) => {
-		// // 		let x = 0
-		// // 		let y = 0
-
-		// // 		if (device.directionY && !device.inverted) {
-		// // 			x = boardWidth - wallHeight + puckRad
-		// // 			y = boardLength - (index + 0.5) * scoreBoxHeight
-		// // 		} else if (device.directionY && device.inverted) {
-		// // 			x = wallHeight - puckRad
-		// // 			y = (index + 0.5) * scoreBoxHeight
-		// // 		} else if (!device.directionY && !device.inverted) {
-		// // 			x = boardLength - (index + 0.5) * scoreBoxHeight
-		// // 			y = wallHeight - puckRad
-		// // 		} else if (!device.directionY && device.inverted) {
-		// // 			x = (index + 0.5) * scoreBoxHeight
-		// // 			y = device.height - wallHeight + puckRad
-		// // 		}
-
-		// // 		// console.log("x: ", x, ", y: ", y)
-		// // 		return Bodies.circle(x, y, puckRad, {
-		// // 			frictionAir: 0.01,
-		// // 			restitution: 0.9,
-		// // 			render: {
-		// //         sprite: {
-		// //           texture: require('images/black_puck.png')
-		// //         }
-		// //       }
-		// // 		})
-		// // 	})
-
-		// // this.puckElements = [...redPucks, ...bluePucks]
-
-		// // console.log("this.puckElements: ", this.puckElements)
-
-		// // World.add(this.world, this.puckElements);
 	}
 
-	// componentDidUpdate({boardConfig: {pucks: oldPucks}}) {
-	// 	// this.drawBoard()
-
-	// 	const {boardConfig: {pucks}} = this.props
-
-
-	// 	//BIG TODO: need to move this update into a shuffleboard_action
-
-	// 	// if (pucks !== oldPucks){
-	// 	// 	this.puckElements.forEach((puck, index) => {
-	// 	// 		// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
-	// 	// 		Body.setAngle(puck, pucks[index].angle)
-	// 	// 		Body.setPosition(puck, pucks[index].position)
-	// 	// 		Body.setVelocity(puck, pucks[index].velocity)
-	// 	// 	})
-
-	// 	// 	//stop broadcasting
-
-	// 	// 	// console.log("clearing Interval this.broadcastPoll: ", this.broadcastPoll)
-	// 	// 	clearInterval(this.broadcastPoll)
-	// 	// }
-	// }
 
 	accpetModalHandler() {
 		// const {} = this.props
@@ -193,7 +89,6 @@ export default class Shuffleboard extends Component {
 		// 	return devA.timestamp > devB.timestamp
 		// })
 
-		console.log("rendering shuffleboard")
 		return (
 			<div className={`shuffleboard-container ${device.directionY ? '' : ' sideways'}`} id="shuffleboard-container">
 				<div id="shuffleboard-canvas">

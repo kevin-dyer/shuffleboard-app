@@ -15,7 +15,8 @@ import {
 	broadcastPucks,
 	// broadcastTurnStarted
 	broadcastMouseDown,
-	broadcastMouseUp
+	broadcastMouseUp,
+	broadcastAcceptModal
 } from 'app/actions/socket-actions'
 require('images/wood_grain3.jpg')
 require('images/wood_grain3_side.jpg')
@@ -50,6 +51,7 @@ const scoreBoxHeight = 100
 const puckRad = 35
 let isMouseDown = false
 const pollInterval = 50
+let lastBroadcaster
 
 
 function getRenderWidth (device, boardWidth, boardLength) {
@@ -439,7 +441,6 @@ export function initBoard(shuffleboardCanvas) {
 			// can broadcast from throttled on puck move
 			// only events available for body is sleepEnd and sleepStart - will need to poll in between
 		//BIG NOTE: Only turn on if its the first device
-		console.log("lengthOffset: ", lengthOffset)
 
 		// add mouse control to first device
 		if (sortedDevices[0] === device) {
@@ -473,57 +474,6 @@ export function initBoard(shuffleboardCanvas) {
 				broadcastMouseUp()
 			})
 		}
-		// Events.on(mouseConstraint, "mousedown", (e) => {
-		// 	//BIG NOTE: need to either pass in device or wrap in dispatcher
-		// 	startPollingPucks(socketId, devices)
-
-
-
-		// 	// const {boardConfig} = getState()
-		// 	// // pucks = boardConfig.pucks
-			
-		// 	// isListening = true
-
-		// 	// //NOTE: may need to get pucks from state here...
-		// 	// // console.log("mousedown, pucks: ", pucks)
-			
-		// 	// //TODO: need to clean this up on component received props - look for updates to pucks to 
-		// 	// if (broadcastPoll) {
-		// 	// 	clearInterval(broadcastPoll)
-		// 	// }
-		// 	// broadcastPoll = setInterval(() => {
-		// 	// 	// console.log("broadcastPoll called")
-
-		// 	// 	//TODO: check if balls are moving, if not, clear interval
-		// 	// 	const boardIsActive = isBoardActive(puckElements)
-
-		// 	// 	if (!boardIsActive) {
-		// 	// 		console.log("board is no longer active, clearing Interval")
-		// 	// 		clearInterval(broadcastPoll)
-		// 	// 		return
-		// 	// 	}
-		// 	// 	if (puckElements && puckElements.length > 0) {
-		// 	// 		const nextPucks = generatePuckMessage(puckElements, device)
-
-		// 	// 		broadcastPucks(nextPucks, device)
-		// 	// 	}
-		// 	// }, pollInterval)
-		// 	// console.log("mousedown, should fire action ")
-
-		// })
-		// Events.on(mouseConstraint, "mousemove", (e) => {
-		// 	// console.log("mousemove e: ", e.source.mouse)
-		// 	//TODO: here broadcase all puck positions and velocities
-		// 	// if (puckElements && puckElements.length > 0 && isListening) {
-		// 	// 	const nextPucks = generatePuckMessage(puckElements, device)
-
-		// 	// 	broadcastPucks(nextPucks, device)
-		// 	// }
-
-		// })
-		// Events.on(mouseConstraint, "mouseup", (e) => {
-		// 	// isListening = false
-		// })
 
 		// fit the render viewport to the scene
 		Render.lookAt(renderMatter, {
@@ -539,8 +489,6 @@ export function initBoard(shuffleboardCanvas) {
 
 		// Sets the pixel ratio of the renderer and updates the canvas. To automatically detect the correct ratio, pass the string 'auto' for pixelRatio.
 		Render.setPixelRatio(renderMatter, 'auto')
-
-		console.log("lengthOffset: ", lengthOffset)
 
 		shuffleboardCanvas.style = createCanvasStyle({
 			device,
@@ -630,28 +578,6 @@ export function startTurn () {
       torque: 0.4
 		})
 
-		//NOTE: these events are not fired... why?
-		//Add events
-		// Events.on(nextPuck, "sleepEnd", e => {
-		// 	console.log("nextPuck sleepEnd fired! e - ", e)
-		// })
-
-		// Events.on(nextPuck, "sleepStart", e => {
-		// 	console.log("nextPuck sleepStart fired! e - ", e)
-		// })
-
-
-		// TODO: here:
-		// start polling the current puck element.
-			// should broadcast at each poll while puck is displayed on device
-			// should keep polling while not on device, but dont broadcast
-		// stop polling and stop turn when
-			// puck has first moved
-			// puck is out of bounds
-			// puck has stopped moving
-
-
-
 		//To keep track of puck elements
 		puckElements = [...puckElements, nextPuck]
 
@@ -667,10 +593,7 @@ export function startPollingPucks () {
 		const {boardConfig: {socketId, devices}} = getState()
 		const device = devices[socketId]
 
-		console.log("startPollingPucks called, broadcastPoll: ", broadcastPoll)
 		stopPollingPucks()
-
-		console.log("startPolling pucks called")
 
 		broadcastPoll = setInterval(() => {
 			// console.log("broadcastPoll called")
@@ -679,7 +602,6 @@ export function startPollingPucks () {
 			const boardIsActive = isBoardActive(puckElements)
 
 			if (!boardIsActive && !isMouseDown) {
-				console.log("board is no longer active, clearing Interval and completing turn")
 				stopPollingPucks()
 
 				const gameState = dispatch(getGameState())
@@ -692,6 +614,7 @@ export function startPollingPucks () {
 				} else {
 					dispatch(showGameOverModal(gameState))
 				}
+
 				return
 			}
 
@@ -700,13 +623,16 @@ export function startPollingPucks () {
 
 				const currentPuck = puckElements[puckElements.length - 1]
 				//check if location of puck is inside device
-				const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
+				// const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
+				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
 
-				if (deviceHasPuck) {
+				console.log("broadcastDevice id: ", broadcastDevice.id, ", socketId: ", socketId)
+				if (broadcastDevice === device) {
+					// console.log("this is broadcastDevice")
 					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
 					const nextPucks = generatePuckMessage(puckElements, device)
 
-					broadcastPucks(nextPucks, device)
+					broadcastPucks(nextPucks, device, devices)
 				}
 			}
 		}, pollInterval)
@@ -721,26 +647,61 @@ export function stopPollingPucks() {
 	}
 }
 
-function isPuckOnDevice(puck, socketId, devices){
-	const {x: devX, y: devY} = puck.position
+
+function getBroadcastDevice(puck, devices, socketId) {
+	const currentDevice = devices[socketId]
 	const boardWidth = getBoardWidth(devices)
 	const boardLength = getBoardLength(devices)
-	const lengthOffset = getLengthOffset(socketId, devices)
-	const device = devices[socketId]
 
-	//NOTE: device.inverted should not matter
-	// actually I think inverted will matter b/c lengthOffset is negative
-	if (device.directionY) {
-		return (
-			(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
-			(devY >= lengthOffset && devY <= (lengthOffset + device.height))
-		)
-	} else {
-		return (
-			(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
-			(devX >= lengthOffset && devX <= (lengthOffset + device.width))
-		)
+	// console.log("getBoadcastDevice devices: ", devices, ", puck.position: ", puck.position) //TODO: make sure all devices and pucks are present
+	for(let deviceKey in devices) {
+
+		// console.log("deviceKey: ", deviceKey)
+		const device = devices[deviceKey]
+		const lengthOffset = getLengthOffset(deviceKey, devices)
+		const {x: devX, y: devY} = puck.position
+		let isOnDevice
+
+		
+
+		//maybe the directionY only matters for the actual device, not the one in the loop
+		// maybe it matters the direction of both - be cuase the loop device directionY is necessary to device wich to use, device.height or device.width
+		
+
+		if (currentDevice.directionY) {
+			isOnDevice = (
+				(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+				(devY >= lengthOffset && devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
+			)
+
+			// if (device.directionY) {
+			// 	console.log("lengthOffset: ", lengthOffset, ", device.height: ", device.height, ", puck.position.y: ", puck.position.y, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
+			// 	console.log("1: ", devX >= wallHeight, ", 2: ", devX <= (boardWidth - wallHeight), ", 3: ", devY >= lengthOffset, ", 4: ", devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
+			// 	console.log("devY: ", devY, ", device.directionY: ", device.directionY)
+			// }
+
+		} else {
+			isOnDevice = (
+				(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
+				(devX >= lengthOffset && devX <= (lengthOffset + (device.directionY ? device.width : device.height)))
+			)
+
+			
+
+			// console.log("1: ", devY >= wallHeight, ", 2: ", devY <= (boardWidth - wallHeight), ", 3: ", devX >= lengthOffset, ", 4: ", devX <= (lengthOffset + device.width), ", isOnDevice: ", isOnDevice)
+		}
+
+		// console.log("isOnDevice ", deviceKey,": ", isOnDevice, ", lengthOffset: ", lengthOffset)
+		console.log("lengthOffset: ", lengthOffset, ", device.width: ", device.width, ", puck.position.x: ", puck.position.x, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
+		if (isOnDevice) {
+			lastBroadcaster = device
+			
+			// console.log("getBroadcastDevice returning device: ", device.id)
+			return device
+		}
 	}
+
+	return lastBroadcaster
 }
 
 export function getBoardLength (devices) {
@@ -811,7 +772,8 @@ export function updatePucks (pucks) {
 	return (dispatch, getState) => {
 		const {boardConfig: {devices, socketId}} = getState()
 		const device = devices[socketId]
-		const nextPucks = puckMessageToState(pucks, device)
+		//NOTE: let socket-actions do the transforms
+		// const nextPucks = puckMessageToState(pucks, device)
 
 		// console.log("updatePucks called, devices: ", devices)
 		// console.log("device: ", device)
@@ -821,14 +783,14 @@ export function updatePucks (pucks) {
 			// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
 
 			//BIG TODO: Need to convert the incoming pucks to board config
-			Body.setAngle(puck, nextPucks[index].angle)
-			Body.setPosition(puck, nextPucks[index].position)
-			Body.setVelocity(puck, nextPucks[index].velocity)
+			Body.setAngle(puck, pucks[index].angle)
+			Body.setPosition(puck, pucks[index].position)
+			Body.setVelocity(puck, pucks[index].velocity)
 		})
 
 		return {
 			type: UPDATE_PUCKS,
-			pucks: puckMessageToState(pucks, devices)
+			pucks
 		}
 	}
 }
@@ -846,33 +808,34 @@ export function generatePuckMessage(pucks = [], device) {
 }
 
 //NOTE: these two methods should be in socket-actions
-export function puckStateToMessage (pucks, device) {
+export function puckStateToMessage (pucks, device, devices) {
+	const boardWidth = getBoardWidth(devices)
 	//transform pucks to broadcast in the correct (directionY) orientation
 	// console.log("puckStateToMessage pucks: ", pucks, ", device: ", device)
 	// console.log("first puck position IN STATE x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
 	return pucks.map(puck => {
 		let angle = puck.angle
-		let position = puck.position
-		let velocity = puck.velocity
+		let position = {...puck.position}
+		let velocity = {...puck.velocity}
 
 		// console.log("angle: ", angle, ", position: ", position, ", velocity: ", velocity)
 		//add 90deg if !directionY
 		if (!device.directionY) {
-			angle += Math.PI / 2
+			angle -= Math.PI / 2
 
 			// Swapping x and y position is fucked 
 				// either becuase I have to account for gutter, boardWidth and boardLength
 				// or for some other reason
 			//swap x and y
-			const tempP = position.x
-			const tempV = velocity.x
-			// position.x = position.y
-			// position.y = tempP
+			const tempPX = position.x
+			const tempVX = velocity.x
+			position.x = boardWidth - position.y
+			position.y = tempPX
 
 			// console.log("swapped position: ", position)
 
 			velocity.x = velocity.y
-			velocity.y = tempV
+			velocity.y = tempVX
 			//TODO: position and velocity
 		}
 
@@ -897,25 +860,26 @@ export function puckStateToMessage (pucks, device) {
 	})
 }
 
-export function puckMessageToState (pucks, device) {
+export function puckMessageToState (pucks, device, devices) {
+	const boardWidth = getBoardWidth(devices)
 	// console.log("RECEIVED first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
 
 	//Convert pucks from message to device orientation
 	// console.log("puckMessageToState pucks: ", pucks, ", device: ", device)
 	return pucks.map(puck => {
 		let angle = puck.angle
-		let position = puck.position
-		let velocity = puck.velocity
+		let position = {...puck.position}
+		let velocity = {...puck.velocity}
 
 		if (!device.directionY) {
-			angle -= Math.PI / 2
+			angle += Math.PI / 2
 
 			//swap x and y
-			const tempP = position.x
+			const tempPX = position.x
 			const tempV = velocity.x
 			//WHy doesnt this work
-			// position.x = position.y
-			// position.y = tempP
+			position.x = position.y
+			position.y = boardWidth - tempPX
 
 			velocity.x = velocity.y
 			velocity.y = tempV
@@ -944,26 +908,18 @@ export function getScoreFromPucks(pucks=[], devices={}, socketId) {
 	const device = devices[socketId]
 	const boardLength = getBoardLength(devices)
 	const boardWidth = getBoardWidth(devices)
-	// let redPuckCount = 0
-	// let bluePuckCount = 0
 	let redScore = 0
 	let blueScore = 0
 
 	//NOTE: these are puckElements
 	pucks.forEach(puck => {
-		console.log("scoring puck.position.y: ", puck.position.y, ", boardLength: ", boardLength)
-		console.log("device: ", device)
-		//NOTE: need to also ensure the puck is in bounds
-		//Question: how do I tell the team of a puck element?
 		if (device.directionY && puck.position.x > wallHeight && puck.position.x < (boardWidth - wallHeight)) {
 			if (!device.inverted) {
 				if (puck.position.y > boardLength) {
 					//dont count
 				} else if (puck.position.y > (boardLength - scoreBoxHeight)) {
-					console.log("puck is here! +3")
 					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 3
-						console.log("redScore: ", redScore)
 					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 3
 					}
@@ -1126,6 +1082,7 @@ export function showGameOverModal({score}) {
 // }
 
 export function acceptModal() {
+	broadcastAcceptModal()
 	return {
 		type: ACCEPT_MODAL
 	}

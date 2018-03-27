@@ -63,7 +63,14 @@ export default class GameDialog extends Component {
 
 	}
 
-	handleAccept(e) {
+	componentDidUpdate({boardConfig: {dialog: {accepted: prevAccepted}}}) {
+		const {boardConfig: {dialog: {accepted}}} = this.props
+		if (!prevAccepted && accepted) {
+			this.handleAccept()
+		}
+	} 
+
+	handleAccept() {
 		const {
 			boardConfig: {pucks=[]},
 			getGameState,
@@ -81,9 +88,9 @@ export default class GameDialog extends Component {
 			startTurn()
 		}
 
-		const {acceptModal} = this.props
+		// const {acceptModal} = this.props
 
-		acceptModal()
+		// acceptModal()
 	}
 
 	render() {
@@ -97,7 +104,7 @@ export default class GameDialog extends Component {
 					accepted
 				}
 			},
-			router
+			acceptModal
 		} = this.props
 		const device = devices[socketId] || {}
 
@@ -113,7 +120,7 @@ export default class GameDialog extends Component {
 		        label="Ok"
 		        primary={true}
 		        keyboardFocused={true}
-		        onClick={::this.handleAccept}
+		        onClick={acceptModal}
 		      />,
 		    ]}
         modal={false}

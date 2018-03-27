@@ -5,7 +5,8 @@ import {
 	puckMessageToState,
 	startPollingPucks,
 	mouseDown,
-	mouseUp
+	mouseUp,
+	ACCEPT_MODAL
 } from 'app/actions/shuffleboard-actions'
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
@@ -56,18 +57,20 @@ export const init = (store) => {
 		const {boardConfig: {devices, socketId}} = store.getState()
 		const device = devices[socketId]
 		
-		// console.log("RECEIVED_PUCKS! device from state: ", device)
+		// console.log("RECEIVED_PUCKS! payload: ", payload)
 
 		//NOTE: need to modify the payload based on the current device directionY and inverted
 		//TODO: transform payload here, get state from store.getState()
-		const nextPucks = puckMessageToState(payload, device)
+		const nextPucks = puckMessageToState(payload, device, devices)
+
+		// console.log("nextPucks: ", nextPucks)
 		store.dispatch(updatePucks(nextPucks))
 	})
 
-	socket.on(TURN_HAS_STARTED, payload => {
-		console.log("TURN_HAS_STARTED received from server")
-		store.dispatch(startPollingPucks())
-	})
+	// socket.on(TURN_HAS_STARTED, payload => {
+	// 	console.log("TURN_HAS_STARTED received from server")
+	// 	store.dispatch(startPollingPucks())
+	// })
 
 	socket.on(MOUSE_DOWN, payload => {
 		mouseDown()
@@ -76,7 +79,11 @@ export const init = (store) => {
 
 	socket.on(MOUSE_UP, payload => {
 		mouseUp()
-		// store.disptach(mouseUp())
+	})
+
+	socket.on(ACCEPT_MODAL, payload => {
+		//NOTE: do not call acceptModal action creator b/c it will broadcast the message
+		store.dispatch({type: ACCEPT_MODAL})
 	})
 }
 
@@ -124,11 +131,13 @@ function setSocketId (socketId) {
 	}
 }
 
-export function broadcastPucks(pucks, device) {
+export function broadcastPucks(pucks, device, devices) {
 
 	//TODO: modify pucks here based on current device
 	// console.log("STATE broadcastPucks first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
-	const outgoingPucks = puckStateToMessage(pucks, device)
+	const outgoingPucks = puckStateToMessage(pucks, device, devices)
+
+
 
 	// console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
 	emit(BROADCAST_PUCKS, outgoingPucks)
@@ -147,6 +156,9 @@ export function broadcastMouseUp() {
 	emit(MOUSE_UP)
 }
 
+export function broadcastAcceptModal() {
+	emit(ACCEPT_MODAL)
+}
 
 //IDK if i like the polling done here, id rather do it in shuffleboard where i have access to pucks
 // and i can tell whether they are still moving
