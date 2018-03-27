@@ -12,10 +12,14 @@ import {
 	Events
 } from 'matter-js'
 import {
-	broadcastPucks
+	broadcastPucks,
+	// broadcastTurnStarted
+	broadcastMouseDown,
+	broadcastMouseUp
 } from 'app/actions/socket-actions'
 require('images/wood_grain3.jpg')
 require('images/wood_grain3_side.jpg')
+import _ from 'underscore'
 
 export const SET_BOARD_DIMENSIONS = 'SET_BOARD_DIMENSIONS'
 export const ADD_PUCK = 'ADD_PUCK'
@@ -25,6 +29,7 @@ export const SHOW_START_GAME_MODAL = 'SHOW_START_GAME_MODAL'
 export const SHOW_GAME_OVER_MODAL = 'SHOW_GAME_OVER_MODAL'
 // export const CANCEL_MODAL = 'CANCEL_MODAL'
 export const ACCEPT_MODAL = 'ACCEPT_MODAL'
+export const SHOW_NEXT_TURN_MODAL = 'SHOW_NEXT_TURN_MODAL'
 
 export const TEAM_TYPES = {
 	RED: 'RED',
@@ -38,6 +43,14 @@ let renderMatter
 let runner
 let mouse
 let mouseConstraint
+let puckElements = []
+let broadcastPoll
+const wallHeight = 40
+const scoreBoxHeight = 100
+const puckRad = 35
+let isMouseDown = false
+const pollInterval = 50
+
 
 function getRenderWidth (device, boardWidth, boardLength) {
 	return device.directionY
@@ -90,7 +103,6 @@ function getRenderYMax (device, boardWidth, boardLength, lengthOffset) {
 function getScoreDimmensions ({
 	device,
 	index,
-	scoreBoxHeight,
 	scoreBox,
 	boardWidth,
 	boardLength
@@ -106,7 +118,7 @@ function getScoreDimmensions ({
 		rectX = boardWidth / 2
 		rectY = boardLength - (index + 0.5) * scoreBoxHeight
 
-		console.log("directionY & inverted. rectY: ",rectY)
+		// console.log("directionY & inverted. rectY: ",rectY)
 		rectWidth = boardWidth
 		rectLength = scoreBoxHeight
 	} else if (!device.directionY && !device.inverted) {
@@ -132,7 +144,6 @@ function getScoreDimmensions ({
 function getOppScoreDimmensions ({
 	device,
 	index,
-	scoreBoxHeight,
 	scoreBox,
 	boardWidth,
 	boardLength
@@ -170,7 +181,6 @@ function getOppScoreDimmensions ({
 }
 
 function createWalls({directionY, boardWidth, boardLength}) {
-	const wallHeight = 40
 	const wallProps = {
 		isStatic: true,
 		restitution: 1,
@@ -228,14 +238,12 @@ function createScoreBoxes({device, boardWidth, boardLength}) {
 	}
 
 	// Score box dimmensions
-	const scoreBoxHeight = 100
 	const scoreLabels = [null, null, null]
 		.map((scoreBox, index) => {
 			return Bodies.rectangle(
 				...getScoreDimmensions({
 					device,
 					index,
-					scoreBoxHeight,
 					scoreBox,
 					boardWidth,
 					boardLength
@@ -261,7 +269,6 @@ function createScoreBoxes({device, boardWidth, boardLength}) {
 			...getScoreDimmensions({
 				device,
 				index,
-				scoreBoxHeight,
 				scoreBox,
 				boardWidth,
 				boardLength
@@ -278,7 +285,6 @@ function createScoreBoxes({device, boardWidth, boardLength}) {
 				...getOppScoreDimmensions({
 					device,
 					index,
-					scoreBoxHeight,
 					scoreBox,
 					boardWidth,
 					boardLength
@@ -303,7 +309,6 @@ function createScoreBoxes({device, boardWidth, boardLength}) {
 				...getOppScoreDimmensions({
 					device,
 					index,
-					scoreBoxHeight,
 					scoreBox,
 					boardWidth,
 					boardLength
@@ -368,12 +373,19 @@ function createCanvasStyle({
 export function initBoard(shuffleboardCanvas) {
 	return (dispatch, getState) => {
 		const {
-			boardConfig: {devices={}, socketId, pucks}
+			boardConfig: {
+				devices={},
+				socketId
+				// pucks
+			}
 		} = getState()
 		const device = devices[socketId] || {}
 		const boardWidth = getBoardWidth(devices)
 		const boardLength = getBoardLength(devices)
 		const lengthOffset = getLengthOffset(socketId, devices)
+		const sortedDevices = sortDevices(devices)
+
+		let pucks = [] //TODO: update on events
 
 		engine = Engine.create()
 		world = engine.world
@@ -420,68 +432,98 @@ export function initBoard(shuffleboardCanvas) {
 		World.add(world, walls)
 
 
-		// add mouse control
-		mouse = Mouse.create(renderMatter.canvas)
-		mouseConstraint = MouseConstraint.create(engine, {
-				mouse: mouse,
-				constraint: {
-						stiffness: 0.2,
-						render: {
-								visible: false
-						}
-				}
-		});
+		
 
-		World.add(world, mouseConstraint);
-
-		// keep the mouse in sync with rendering
-		renderMatter.mouse = mouse;
-
-		let isListening = false
-		const pollInterval = 500
 
 		//TODO: change board to active when current turn's ball is in frame
-		Events.on(mouseConstraint, "mousedown", (e) => {
-			isListening = true
+			// can broadcast from throttled on puck move
+			// only events available for body is sleepEnd and sleepStart - will need to poll in between
+		//BIG NOTE: Only turn on if its the first device
+		console.log("lengthOffset: ", lengthOffset)
+
+		// add mouse control to first device
+		if (sortedDevices[0] === device) {
+			mouse = Mouse.create(renderMatter.canvas)
+			mouseConstraint = MouseConstraint.create(engine, {
+					mouse: mouse,
+					constraint: {
+							stiffness: 0.2,
+							render: {
+									visible: false
+							}
+					}
+			});
+
+			World.add(world, mouseConstraint);
+
+			// keep the mouse in sync with rendering
+			renderMatter.mouse = mouse;
+
+			Events.on(mouseConstraint, "mousedown", (e) => {
+				//NOTE: that this should fire action to broadcast to rest of devices to start polling
+				mouseDown()
+				broadcastMouseDown()
+				// This should be fired to start polling self (NOTE: make sure the broadcast doesnt come back)
+				dispatch(startPollingPucks())
+			})
+
+			Events.on(mouseConstraint, "mouseup", (e) => {
+				mouseUp()
+
+				broadcastMouseUp()
+			})
+		}
+		// Events.on(mouseConstraint, "mousedown", (e) => {
+		// 	//BIG NOTE: need to either pass in device or wrap in dispatcher
+		// 	startPollingPucks(socketId, devices)
+
+
+
+		// 	// const {boardConfig} = getState()
+		// 	// // pucks = boardConfig.pucks
 			
-			//TODO: need to clean this up on component received props - look for updates to pucks to 
-			if (broadcastPoll) {
-				clearInterval(broadcastPoll)
-			}
-			broadcastPoll = setInterval(() => {
-				// console.log("broadcastPoll called")
+		// 	// isListening = true
 
-				//TODO: check if balls are moving, if not, clear interval
-				const boardIsActive = isBoardActive(pucks)
+		// 	// //NOTE: may need to get pucks from state here...
+		// 	// // console.log("mousedown, pucks: ", pucks)
+			
+		// 	// //TODO: need to clean this up on component received props - look for updates to pucks to 
+		// 	// if (broadcastPoll) {
+		// 	// 	clearInterval(broadcastPoll)
+		// 	// }
+		// 	// broadcastPoll = setInterval(() => {
+		// 	// 	// console.log("broadcastPoll called")
 
-				if (!boardIsActive) {
-					console.log("board is no longer active, clearing Interval")
-					clearInterval(broadcastPoll)
-					return
-				}
-				if (pucks) {
-					const nextPucks = generatePuckMessage(pucks, device)
+		// 	// 	//TODO: check if balls are moving, if not, clear interval
+		// 	// 	const boardIsActive = isBoardActive(puckElements)
 
-					broadcastPucks(nextPucks, device)
-				}
-			}, pollInterval)
-			console.log("mousedown, should fire action ")
+		// 	// 	if (!boardIsActive) {
+		// 	// 		console.log("board is no longer active, clearing Interval")
+		// 	// 		clearInterval(broadcastPoll)
+		// 	// 		return
+		// 	// 	}
+		// 	// 	if (puckElements && puckElements.length > 0) {
+		// 	// 		const nextPucks = generatePuckMessage(puckElements, device)
 
-		})
-		Events.on(mouseConstraint, "mousemove", (e) => {
-			// console.log("mousemove e: ", e.source.mouse)
-			//TODO: here broadcase all puck positions and velocities
+		// 	// 		broadcastPucks(nextPucks, device)
+		// 	// 	}
+		// 	// }, pollInterval)
+		// 	// console.log("mousedown, should fire action ")
 
-			if (pucks && isListening) {
-				const nextPucks = generatePuckMessage(pucks, device)
+		// })
+		// Events.on(mouseConstraint, "mousemove", (e) => {
+		// 	// console.log("mousemove e: ", e.source.mouse)
+		// 	//TODO: here broadcase all puck positions and velocities
+		// 	// if (puckElements && puckElements.length > 0 && isListening) {
+		// 	// 	const nextPucks = generatePuckMessage(puckElements, device)
 
-				broadcastPucks(nextPucks, device)
-			}
+		// 	// 	broadcastPucks(nextPucks, device)
+		// 	// }
 
-		})
-		Events.on(mouseConstraint, "mouseup", (e) => {
-			isListening = false
-		})
+		// })
+		// Events.on(mouseConstraint, "mouseup", (e) => {
+		// 	// isListening = false
+		// })
 
 		// fit the render viewport to the scene
 		Render.lookAt(renderMatter, {
@@ -495,6 +537,9 @@ export function initBoard(shuffleboardCanvas) {
 				}
 		});
 
+		// Sets the pixel ratio of the renderer and updates the canvas. To automatically detect the correct ratio, pass the string 'auto' for pixelRatio.
+		Render.setPixelRatio(renderMatter, 'auto')
+
 		console.log("lengthOffset: ", lengthOffset)
 
 		shuffleboardCanvas.style = createCanvasStyle({
@@ -507,23 +552,37 @@ export function initBoard(shuffleboardCanvas) {
 	}
 }
 
+export function mouseDown() {
+	isMouseDown = true
+}
 
+export function mouseUp() {
+	isMouseDown = false
+}
+
+//TODO: this should determine puck type to add from game state,
+// and actually add the puck to the world
 export function startTurn () {
 	return (dispatch, getState) => {
 		const {
 			boardConfig: {
 				pucks,
-				devices
+				devices={},
+				socketId
 			}
 		} = getState()
+		const device = devices[socketId]
 		const boardWidth = getBoardWidth(devices)
 		const boardLength = getBoardLength(devices)
-
-		console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
+		const {isRedsTurn} = dispatch(getGameState())
+		
+		// console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
 		const padding = 50
-		const team = pucks.length % 2
-			? TEAM_TYPES.BLUE
-			: TEAM_TYPES.RED 
+		const team = isRedsTurn
+			? TEAM_TYPES.RED
+			: TEAM_TYPES.BLUE
+
+		//NOTE: position should be independent of device position
 		const puck = {
 			id: `${team}${pucks.length}`,
 			team,
@@ -534,12 +593,154 @@ export function startTurn () {
 			vx: 0,
 			vy: 0
 		}
-		return dispatch({
+		
+		dispatch({
 			type: ADD_PUCK,
 			puck
 		})
+
+		//add puck to board - note the x and y should be transformed from the state puck.x and y
+		let x, y
+		if (device.directionY && !device.inverted) {
+			x = boardWidth / 2
+			y = 1.5 * puckRad
+		} else if (device.directionY && device.inverted) {
+			x = boardWidth / 2
+			y = boardLength - (1.5 * puckRad)
+		} else if (!device.directionY && !device.inverted) {
+			x = 1.5 * puckRad
+			y = boardWidth / 2
+		} else if (!device.directionY && device.inverted) {
+			x = boardLength - 1.5 * puckRad
+			y = boardWidth / 2
+		}
+
+		//TODO: need to add listeners for determining when puck is out of bounds or stopped
+		let nextPuck = Bodies.circle(x, y, puckRad, {
+			frictionAir: 0.03,
+			restitution: 0.9,
+			render: {
+        sprite: {
+          texture: isRedsTurn 
+          	? require('images/red_puck.png')
+          	: require('images/black_puck.png')
+        }
+      },
+      label: team,
+      torque: 0.4
+		})
+
+		//NOTE: these events are not fired... why?
+		//Add events
+		// Events.on(nextPuck, "sleepEnd", e => {
+		// 	console.log("nextPuck sleepEnd fired! e - ", e)
+		// })
+
+		// Events.on(nextPuck, "sleepStart", e => {
+		// 	console.log("nextPuck sleepStart fired! e - ", e)
+		// })
+
+
+		// TODO: here:
+		// start polling the current puck element.
+			// should broadcast at each poll while puck is displayed on device
+			// should keep polling while not on device, but dont broadcast
+		// stop polling and stop turn when
+			// puck has first moved
+			// puck is out of bounds
+			// puck has stopped moving
+
+
+
+		//To keep track of puck elements
+		puckElements = [...puckElements, nextPuck]
+
+		World.add(world, nextPuck)
 	}
-	//TODO: create puck - create id
+}
+
+//TODO: call this on action fired from mouse down
+// on mouse down, should broadcast message
+	// this message should cause all devices to fire startPollingPucks
+export function startPollingPucks () {
+	return (dispatch, getState) => {
+		const {boardConfig: {socketId, devices}} = getState()
+		const device = devices[socketId]
+
+		console.log("startPollingPucks called, broadcastPoll: ", broadcastPoll)
+		stopPollingPucks()
+
+		console.log("startPolling pucks called")
+
+		broadcastPoll = setInterval(() => {
+			// console.log("broadcastPoll called")
+
+			//TODO: check if balls are moving, if not and mouse is not down, clear interval and complete turn
+			const boardIsActive = isBoardActive(puckElements)
+
+			if (!boardIsActive && !isMouseDown) {
+				console.log("board is no longer active, clearing Interval and completing turn")
+				stopPollingPucks()
+
+				const gameState = dispatch(getGameState())
+
+				// console.log("gameState: ", gameState)
+
+				//TODO: broadcast turn complete
+				if (!gameState.isGameOver) {
+					dispatch(showNextTurnModal(gameState))
+				} else {
+					dispatch(showGameOverModal(gameState))
+				}
+				return
+			}
+
+			//Note: Only broadcast here if current puck is diplayed on current device
+			if (puckElements && puckElements.length > 0) {
+
+				const currentPuck = puckElements[puckElements.length - 1]
+				//check if location of puck is inside device
+				const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
+
+				if (deviceHasPuck) {
+					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
+					const nextPucks = generatePuckMessage(puckElements, device)
+
+					broadcastPucks(nextPucks, device)
+				}
+			}
+		}, pollInterval)
+	}
+}
+
+//TODO: call this at the end of the turn when puck has stopped moving
+export function stopPollingPucks() {
+	if (broadcastPoll) {
+		console.log("clearing interval broadcastPoll")
+		clearInterval(broadcastPoll)
+	}
+}
+
+function isPuckOnDevice(puck, socketId, devices){
+	const {x: devX, y: devY} = puck.position
+	const boardWidth = getBoardWidth(devices)
+	const boardLength = getBoardLength(devices)
+	const lengthOffset = getLengthOffset(socketId, devices)
+	const device = devices[socketId]
+
+	//NOTE: device.inverted should not matter
+	// actually I think inverted will matter b/c lengthOffset is negative
+	if (device.directionY) {
+		return (
+			(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+			(devY >= lengthOffset && devY <= (lengthOffset + device.height))
+		)
+	} else {
+		return (
+			(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
+			(devX >= lengthOffset && devX <= (lengthOffset + device.width))
+		)
+	}
 }
 
 export function getBoardLength (devices) {
@@ -560,6 +761,14 @@ export function getBoardWidth (devices) {
 				: width
 		}
 	}, Infinity)
+}
+
+export function sortDevices (devices) {
+	return _.sortBy(Object.values(devices), dev => {
+			return dev &&
+				dev.timestamp &&
+				parseInt(dev.timestamp)
+		})
 }
 
 export function getLengthOffset (socketId, devices) {
@@ -602,9 +811,21 @@ export function updatePucks (pucks) {
 	return (dispatch, getState) => {
 		const {boardConfig: {devices, socketId}} = getState()
 		const device = devices[socketId]
+		const nextPucks = puckMessageToState(pucks, device)
 
-		console.log("updatePucks called, devices: ", devices)
-		console.log("device: ", device)
+		// console.log("updatePucks called, devices: ", devices)
+		// console.log("device: ", device)
+
+		//update puckElements
+		puckElements.forEach((puck, index) => {
+			// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
+
+			//BIG TODO: Need to convert the incoming pucks to board config
+			Body.setAngle(puck, nextPucks[index].angle)
+			Body.setPosition(puck, nextPucks[index].position)
+			Body.setVelocity(puck, nextPucks[index].velocity)
+		})
+
 		return {
 			type: UPDATE_PUCKS,
 			pucks: puckMessageToState(pucks, devices)
@@ -626,7 +847,6 @@ export function generatePuckMessage(pucks = [], device) {
 
 //NOTE: these two methods should be in socket-actions
 export function puckStateToMessage (pucks, device) {
-	const wallHeight = 40
 	//transform pucks to broadcast in the correct (directionY) orientation
 	// console.log("puckStateToMessage pucks: ", pucks, ", device: ", device)
 	// console.log("first puck position IN STATE x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
@@ -678,9 +898,7 @@ export function puckStateToMessage (pucks, device) {
 }
 
 export function puckMessageToState (pucks, device) {
-	const wallHeight = 40
-
-	console.log("RECEIVED first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
+	// console.log("RECEIVED first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
 
 	//Convert pucks from message to device orientation
 	// console.log("puckMessageToState pucks: ", pucks, ", device: ", device)
@@ -722,89 +940,43 @@ export function puckMessageToState (pucks, device) {
 	})
 }
 
-export function getScoreFromPucks(pucks, devices, socketId) {
+export function getScoreFromPucks(pucks=[], devices={}, socketId) {
 	const device = devices[socketId]
 	const boardLength = getBoardLength(devices)
-	const scoreBoxHeight = 100
+	const boardWidth = getBoardWidth(devices)
 	// let redPuckCount = 0
 	// let bluePuckCount = 0
 	let redScore = 0
 	let blueScore = 0
 
+	//NOTE: these are puckElements
 	pucks.forEach(puck => {
-		// if (puck.team === TEAM_TYPES.RED) {
-		// 	++redPuckCount
-		// } else if (puck.team === TEAM_TYPES.BLUE) {
-		// 	++bluePuckCount
-		// }
-
-		if (!isTurnInProgress && puck.velocity.x )
-		if (device.directionY) {
-			if (!device.inverted) {
-				if (puck.position.x > boardLength) {
-					//dont count
-				} else if (puck.position.x > (boardLength - scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.x > (boardLength - 2 * scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.x > (boardLength - 3 * scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
-				}
-			} else {
-				if (puck.position.x < 0) {
-					//dont count
-				} else if (puck.position.x < scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.x < 2 * scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.x < 3 * scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.team === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
-				}
-			}
-		} else {
+		console.log("scoring puck.position.y: ", puck.position.y, ", boardLength: ", boardLength)
+		console.log("device: ", device)
+		//NOTE: need to also ensure the puck is in bounds
+		//Question: how do I tell the team of a puck element?
+		if (device.directionY && puck.position.x > wallHeight && puck.position.x < (boardWidth - wallHeight)) {
 			if (!device.inverted) {
 				if (puck.position.y > boardLength) {
 					//dont count
 				} else if (puck.position.y > (boardLength - scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
+					console.log("puck is here! +3")
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 3
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+						console.log("redScore: ", redScore)
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 3
 					}
 				} else if (puck.position.y > (boardLength - 2 * scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 2
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 2
 					}
 				} else if (puck.position.y > (boardLength - 3 * scoreBoxHeight)) {
-					if (puck.team === TEAM_TYPES.RED) {
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 1
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 1
 					}
 				}
@@ -812,21 +984,67 @@ export function getScoreFromPucks(pucks, devices, socketId) {
 				if (puck.position.y < 0) {
 					//dont count
 				} else if (puck.position.y < scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 3
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 3
 					}
 				} else if (puck.position.y < 2 * scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 2
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 2
 					}
 				} else if (puck.position.y < 3 * scoreBoxHeight) {
-					if (puck.team === TEAM_TYPES.RED) {
+					if (puck.label === TEAM_TYPES.RED) {
 						redScore += 1
-					} else if (puck.team === TEAM_TYPES.BLUE) {
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 1
+					}
+				}
+			}
+		} else if (puck.position.y > wallHeight && puck.position.y < (boardWidth - wallHeight)) {
+			if (!device.inverted) {
+				if (puck.position.x > boardLength) {
+					//dont count
+				} else if (puck.position.x > (boardLength - scoreBoxHeight)) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 3
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 3
+					}
+				} else if (puck.position.x > (boardLength - 2 * scoreBoxHeight)) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 2
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 2
+					}
+				} else if (puck.position.x > (boardLength - 3 * scoreBoxHeight)) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 1
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 1
+					}
+				}
+			} else {
+				if (puck.position.x < 0) {
+					//dont count
+				} else if (puck.position.x < scoreBoxHeight) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 3
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 3
+					}
+				} else if (puck.position.x < 2 * scoreBoxHeight) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 2
+					} else if (puck.label === TEAM_TYPES.BLUE) {
+						blueScore += 2
+					}
+				} else if (puck.position.x < 3 * scoreBoxHeight) {
+					if (puck.label === TEAM_TYPES.RED) {
+						redScore += 1
+					} else if (puck.label === TEAM_TYPES.BLUE) {
 						blueScore += 1
 					}
 				}
@@ -844,7 +1062,11 @@ export function getScoreFromPucks(pucks, devices, socketId) {
 export function getGameState() {
 	return (dispatch, getState) => {
 		const {
-			boradConfig: {pucks, devices, socketId}
+			boardConfig: {
+				pucks=[],
+				devices={},
+				socketId
+			}
 		} = getState()
 		let redPuckCount = 0
 		let bluePuckCount = 0
@@ -860,10 +1082,12 @@ export function getGameState() {
 			}
 		})
 
+		// console.log("redPuckCount: ", redPuckCount, ", bluePuckCount: ", bluePuckCount, ", isRedsTurn: ", redPuckCount <= bluePuckCount)
+
 		return {
-			score: getScoreFromPucks(pucks, devices, socketId), //{red: 4, blue: 1}
+			score: getScoreFromPucks(puckElements, devices, socketId), //{red: 4, blue: 1}
 			isRedsTurn: redPuckCount <= bluePuckCount,
-			isTurnInProgress: isBoardActive(pucks), //This is not completely accurate b/c pucks are not moving at beginning of turn
+			isTurnInProgress: isBoardActive(puckElements), //This is not completely accurate b/c pucks are not moving at beginning of turn
 			isGameOver: redPuckCount + bluePuckCount === 8
 		}
 	}
@@ -871,7 +1095,7 @@ export function getGameState() {
  
 
  //here 
-export function showStartGameModal(world) {
+export function showStartGameModal() {
 	//set message title and content in state, but how to handle modal action btns?
 	// ok button will add puck to board
 	return {
@@ -879,10 +1103,19 @@ export function showStartGameModal(world) {
 	}
 }
 
-export function showGameOverModal(winningTeam) {
+export function showNextTurnModal({score, isRedsTurn}) {
+	return {
+		type: SHOW_NEXT_TURN_MODAL,
+		score,
+		isRedsTurn
+	}
+}
+
+//TODO: update reducer
+export function showGameOverModal({score}) {
 	return {
 		type: SHOW_GAME_OVER_MODAL,
-		team: winningTeam
+		score
 	}
 }
 

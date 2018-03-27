@@ -74,7 +74,10 @@ export default class Shuffleboard extends Component {
 		// //TODO: replace
 		// // display modal that kicks off first turn
 		// // call action
-		// showStartGameModal({world: this.world})
+
+		showStartGameModal()
+
+
 		// //Pucks
 		// const puckRad = 35
 		// const wallHeight = 40
@@ -147,25 +150,28 @@ export default class Shuffleboard extends Component {
 		// // World.add(this.world, this.puckElements);
 	}
 
-	componentDidUpdate({boardConfig: {pucks: oldPucks}}) {
-		// this.drawBoard()
+	// componentDidUpdate({boardConfig: {pucks: oldPucks}}) {
+	// 	// this.drawBoard()
 
-		const {boardConfig: {pucks}} = this.props
+	// 	const {boardConfig: {pucks}} = this.props
 
-		if (pucks !== oldPucks){
-			this.puckElements.forEach((puck, index) => {
-				// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
-				Body.setAngle(puck, pucks[index].angle)
-				Body.setPosition(puck, pucks[index].position)
-				Body.setVelocity(puck, pucks[index].velocity)
-			})
 
-			//stop broadcasting
+	// 	//BIG TODO: need to move this update into a shuffleboard_action
 
-			// console.log("clearing Interval this.broadcastPoll: ", this.broadcastPoll)
-			clearInterval(this.broadcastPoll)
-		}
-	}
+	// 	// if (pucks !== oldPucks){
+	// 	// 	this.puckElements.forEach((puck, index) => {
+	// 	// 		// console.log("updating Body to puck: ", puck, ", pucks[index]: ", pucks[index])
+	// 	// 		Body.setAngle(puck, pucks[index].angle)
+	// 	// 		Body.setPosition(puck, pucks[index].position)
+	// 	// 		Body.setVelocity(puck, pucks[index].velocity)
+	// 	// 	})
+
+	// 	// 	//stop broadcasting
+
+	// 	// 	// console.log("clearing Interval this.broadcastPoll: ", this.broadcastPoll)
+	// 	// 	clearInterval(this.broadcastPoll)
+	// 	// }
+	// }
 
 	accpetModalHandler() {
 		// const {} = this.props

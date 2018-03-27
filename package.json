@@ -91,13 +91,15 @@
     "webpack-merge": "0.14.1"
   },
   "dependencies": {
+    "@fortawesome/fontawesome": "1.1.4",
+    "@fortawesome/react-fontawesome": "0.0.18",
     "autoprefixer": "6.4.1",
     "babel-runtime": "6.11.6",
     "classnames": "2.2.5",
     "express": "4.14.0",
     "lodash": "4.15.0",
     "material-ui": "0.20.0",
-    "matter-js": "0.13.0",
+    "matter-js": "0.14.1",
     "moment": "2.19.2",
     "raven-js": "3.6.1",
     "react": "15.4.2",

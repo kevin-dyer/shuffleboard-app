@@ -10,8 +10,11 @@ import {
   // CANCEL_MODAL,
   ACCEPT_MODAL,
   SHOW_START_GAME_MODAL,
-  SHOW_GAME_OVER_MODAL
+  SHOW_NEXT_TURN_MODAL,
+  SHOW_GAME_OVER_MODAL,
+  TEAM_TYPES
 } from 'app/actions/shuffleboard-actions'
+
 import _ from 'underscore'
 
 const mergeBoardConfigs = (devices, device) => {
@@ -57,10 +60,10 @@ export function boardConfig(state = initialState, action = {}) {
       }
 
     case ADD_PUCK: {
-      const nextPucks = [...state.pucks]
-      nextPucks.push(action.puck)
+      const nextPucks = [...state.pucks, action.puck]
+      // nextPucks.push(action.puck)
 
-      console.log("ADD_PUCK [nextPucks]: ", [...state.pucks, action.puck])
+      // console.log("ADD_PUCK [nextPucks]: ", [...state.pucks, action.puck])
       return {
         ...state,
         pucks: nextPucks
@@ -98,7 +101,18 @@ export function boardConfig(state = initialState, action = {}) {
           ...state.dialog,
           accepted: false,
           title: 'Ready to start the game?',
-          body: 'Red goes first'
+          body: 'Red team goes first'
+        }
+      }
+
+    case SHOW_NEXT_TURN_MODAL:
+      return {
+        ...state,
+        dialog: {
+          ...state.dialog,
+          accepted: false,
+          title: `${action.isRedsTurn ? TEAM_TYPES.RED : TEAM_TYPES.BLUE} team's turn!`,
+          body: `Red: ${action.score.red}, Blue: ${action.score.blue}`
         }
       }
 
@@ -108,7 +122,8 @@ export function boardConfig(state = initialState, action = {}) {
         dialog: {
           ...state.dialog,
           accepted: false,
-          title: `Game Over. ${action.team} won!`
+          title: `${action.score.red > action.score.blue ? TEAM_TYPES.RED : TEAM_TYPES.BLUE} team won!`,
+          body: `Red: ${action.score.red}, Blue: ${action.score.blue}`
         }
       }
 

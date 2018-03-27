@@ -50,8 +50,11 @@ const stateToProps = ({boardConfig}) => ({
 	// cancelModal,
 	acceptModal,
 	getGameState,
+	//TODO: fire these on component did update
 	showStartGameModal,
-	showGameOverModal
+	showGameOverModal,
+
+	startTurn
 })
 @withRouter
 export default class GameDialog extends Component {
@@ -60,27 +63,23 @@ export default class GameDialog extends Component {
 
 	}
 
-	handleCancel(e) {
-		// this.props.cancelModal()
-	}
-
 	handleAccept(e) {
-		// const {
-		// 	boardConfig: {pucks=[]},
-		// 	getGameState,
-		// 	showStartGameModal,
-		// 	showGameOverModal
-		// } = this.props //May not need devices and pucks
-		// const gameState = getGameState()
-		// // this.props.acceptModal()
+		const {
+			boardConfig: {pucks=[]},
+			getGameState,
+			startTurn
+		} = this.props //May not need devices and pucks
+		const gameState = getGameState()
+		// this.props.acceptModal()
 
-		// //use current game state to determing which action to fire
-		// //if no pucks exist, show st
-		// if (pucks.length === 0) {
-		// 	showStartGameModal()
-		// } else if (gameState.isGameOver) {
-		// 	showGameOverModal()
-		// }
+		//use current game state to determing which action to fire
+		//if no pucks exist, show st
+		if (gameState.isGameOver) {
+			// End Game
+			console.log("game has ended. TODO: reset board")
+		} else {
+			startTurn()
+		}
 
 		const {acceptModal} = this.props
 
@@ -111,12 +110,7 @@ export default class GameDialog extends Component {
         title={title}
         actions={[
 		      <FlatButton
-		        label="Cancel"
-		        primary={true}
-		        onClick={::this.handleCancel}
-		      />,
-		      <FlatButton
-		        label="Submit"
+		        label="Ok"
 		        primary={true}
 		        keyboardFocused={true}
 		        onClick={::this.handleAccept}

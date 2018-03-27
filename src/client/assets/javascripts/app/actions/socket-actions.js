@@ -2,7 +2,10 @@ import io from 'socket.io-client'
 import {
 	updatePucks,
 	puckStateToMessage,
-	puckMessageToState
+	puckMessageToState,
+	startPollingPucks,
+	mouseDown,
+	mouseUp
 } from 'app/actions/shuffleboard-actions'
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
@@ -22,6 +25,9 @@ export const USER_LEFT = 'USER_LEFT'
 export const UPDATE_USER_COUNT = 'UPDATE_USER_COUNT'
 export const BROADCAST_PUCKS = 'BROADCAST_PUCKS'
 export const RECEIVED_PUCKS = 'RECEIVED_PUCKS'
+export const TURN_HAS_STARTED = 'TURN_HAS_STARTED'
+export const MOUSE_DOWN = 'MOUSE_DOWN'
+export const MOUSE_UP = 'MOUSE_UP'
 
 export const init = (store) => {
 	//TODO: switch back when deploy to Heroku
@@ -50,12 +56,27 @@ export const init = (store) => {
 		const {boardConfig: {devices, socketId}} = store.getState()
 		const device = devices[socketId]
 		
-		console.log("RECEIVED_PUCKS! device from state: ", device)
+		// console.log("RECEIVED_PUCKS! device from state: ", device)
 
 		//NOTE: need to modify the payload based on the current device directionY and inverted
 		//TODO: transform payload here, get state from store.getState()
 		const nextPucks = puckMessageToState(payload, device)
 		store.dispatch(updatePucks(nextPucks))
+	})
+
+	socket.on(TURN_HAS_STARTED, payload => {
+		console.log("TURN_HAS_STARTED received from server")
+		store.dispatch(startPollingPucks())
+	})
+
+	socket.on(MOUSE_DOWN, payload => {
+		mouseDown()
+		store.dispatch(startPollingPucks())
+	})
+
+	socket.on(MOUSE_UP, payload => {
+		mouseUp()
+		// store.disptach(mouseUp())
 	})
 }
 
@@ -106,11 +127,24 @@ function setSocketId (socketId) {
 export function broadcastPucks(pucks, device) {
 
 	//TODO: modify pucks here based on current device
-	console.log("STATE broadcastPucks first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
+	// console.log("STATE broadcastPucks first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
 	const outgoingPucks = puckStateToMessage(pucks, device)
 
-	console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
+	// console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
 	emit(BROADCAST_PUCKS, outgoingPucks)
+}
+
+export function broadcastTurnStarted() {
+	console.log("emiting TURN_HAS_STARTED")
+	emit(TURN_HAS_STARTED)
+}
+
+export function broadcastMouseDown() {
+	emit(MOUSE_DOWN)
+}
+
+export function broadcastMouseUp() {
+	emit(MOUSE_UP)
 }
 
 
