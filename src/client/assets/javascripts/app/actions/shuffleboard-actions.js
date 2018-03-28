@@ -596,13 +596,14 @@ export function startPollingPucks () {
 		stopPollingPucks()
 
 		broadcastPoll = setInterval(() => {
-			// console.log("broadcastPoll called")
+			// TODO: should check if puck is in bounds
 
-			//TODO: check if balls are moving, if not and mouse is not down, clear interval and complete turn
+			//check if balls are moving, if not and mouse is not down, clear interval and complete turn
 			const boardIsActive = isBoardActive(puckElements)
 
 			if (!boardIsActive && !isMouseDown) {
 				stopPollingPucks()
+				updatePuckCollisions(device, devices)
 
 				const gameState = dispatch(getGameState())
 
@@ -626,7 +627,7 @@ export function startPollingPucks () {
 				// const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
 				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
 
-				console.log("broadcastDevice id: ", broadcastDevice.id, ", socketId: ", socketId)
+				console.log("broadcastDevice id: ", broadcastDevice && broadcastDevice.id, ", socketId: ", socketId)
 				if (broadcastDevice === device) {
 					// console.log("this is broadcastDevice")
 					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
@@ -646,6 +647,50 @@ export function stopPollingPucks() {
 		clearInterval(broadcastPoll)
 	}
 }
+
+//change collision filter for pucks that are off board (so they dont interfear with in play pucks)
+function updatePuckCollisions(device, devices) {
+	const OUTOFBOUNDS = 'OUTOFBOUNDS'
+
+	puckElements.forEach(puck => {
+		if (puck.collisionFilter.group !== OUTOFBOUNDS && !isPuckOnBoard(puck, device, devices)) {
+			puck.collisionFilter = {
+				mask: 'none',
+				group: 'outofbounds'
+			}
+			puck.render.opacity = 0.4
+		}
+	})
+}
+
+function isPuckOnBoard(puck, currentDevice, devices) {
+	const boardWidth = getBoardWidth(devices)
+	const boardLength = getBoardLength(devices)
+	const {x: devX, y: devY} = puck.position
+	let isOnBoard
+
+	if (currentDevice.directionY) {
+		isOnBoard = (
+			(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+			(devY >= 0 && devY <= boardLength)
+		)
+
+		// if (device.directionY) {
+		// 	console.log("lengthOffset: ", lengthOffset, ", device.height: ", device.height, ", puck.position.y: ", puck.position.y, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
+		// 	console.log("1: ", devX >= wallHeight, ", 2: ", devX <= (boardWidth - wallHeight), ", 3: ", devY >= lengthOffset, ", 4: ", devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
+		// 	console.log("devY: ", devY, ", device.directionY: ", device.directionY)
+		// }
+
+	} else {
+		isOnBoard = (
+			(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
+			(devX >= 0 && devX <= boardLength)
+		)
+		// console.log("1: ", devY >= wallHeight, ", 2: ", devY <= (boardWidth - wallHeight), ", 3: ", devX >= lengthOffset, ", 4: ", devX <= (lengthOffset + device.width), ", isOnDevice: ", isOnDevice)
+	}
+
+	return isOnBoard
+} 
 
 
 function getBroadcastDevice(puck, devices, socketId) {
@@ -692,7 +737,7 @@ function getBroadcastDevice(puck, devices, socketId) {
 		}
 
 		// console.log("isOnDevice ", deviceKey,": ", isOnDevice, ", lengthOffset: ", lengthOffset)
-		console.log("lengthOffset: ", lengthOffset, ", device.width: ", device.width, ", puck.position.x: ", puck.position.x, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
+		// console.log("lengthOffset: ", lengthOffset, ", device.width: ", device.width, ", puck.position.x: ", puck.position.x, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
 		if (isOnDevice) {
 			lastBroadcaster = device
 			
@@ -823,34 +868,15 @@ export function puckStateToMessage (pucks, device, devices) {
 		if (!device.directionY) {
 			angle -= Math.PI / 2
 
-			// Swapping x and y position is fucked 
-				// either becuase I have to account for gutter, boardWidth and boardLength
-				// or for some other reason
 			//swap x and y
 			const tempPX = position.x
 			const tempVX = velocity.x
 			position.x = boardWidth - position.y
 			position.y = tempPX
 
-			// console.log("swapped position: ", position)
-
 			velocity.x = velocity.y
 			velocity.y = tempVX
-			//TODO: position and velocity
 		}
-
-		// //subtract 180deg if inverted
-		// if (device.inverted) {
-		// 	angle -= Math.PI
-
-		// 	if (device.directionY) {
-		// 		position.y = boardLength - position.y
-		// 		velocity.y = -velocity.y
-		// 	} else {
-		// 		position.x = boardLength - position.x
-		// 		velocity.x = -velocity.x
-		// 	}
-		// }
 
 		return {
 			angle,
@@ -862,10 +888,7 @@ export function puckStateToMessage (pucks, device, devices) {
 
 export function puckMessageToState (pucks, device, devices) {
 	const boardWidth = getBoardWidth(devices)
-	// console.log("RECEIVED first puck position x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
-
 	//Convert pucks from message to device orientation
-	// console.log("puckMessageToState pucks: ", pucks, ", device: ", device)
 	return pucks.map(puck => {
 		let angle = puck.angle
 		let position = {...puck.position}
