@@ -350,7 +350,8 @@ function createCanvasStyle({
 		height = boardLength
 	} else if (device.directionY && device.inverted) {
 		x = (device.width - boardWidth) / 2
-		y = -lengthOffset //????
+		y = -(boardLength - device.height - lengthOffset)
+
 		width = boardWidth
 		height = boardLength
 	} else if (!device.directionY && !device.inverted) {
@@ -359,7 +360,7 @@ function createCanvasStyle({
 		width = boardLength
 		height = boardWidth
 	} else if (!device.directionY && device.inverted) {
-		x = -lengthOffset //???
+		x = -(boardLength - device.width - lengthOffset)
 		y = (device.height - boardWidth) / 2
 		width = boardLength
 		height = boardWidth
@@ -437,14 +438,6 @@ export function initBoard(shuffleboardCanvas) {
 		World.add(world, walls)
 
 
-		
-
-
-		//TODO: change board to active when current turn's ball is in frame
-			// can broadcast from throttled on puck move
-			// only events available for body is sleepEnd and sleepStart - will need to poll in between
-		//BIG NOTE: Only turn on if its the first device
-
 		// add mouse control to first device
 		if (sortedDevices[0] === device) {
 			mouse = Mouse.create(renderMatter.canvas)
@@ -473,7 +466,6 @@ export function initBoard(shuffleboardCanvas) {
 
 			Events.on(mouseConstraint, "mouseup", (e) => {
 				mouseUp()
-
 				broadcastMouseUp()
 			})
 		}
@@ -637,7 +629,7 @@ export function startPollingPucks () {
 				// }
 				// console.log("broadcastDevice id: ", broadcastDevice && broadcastDevice.id, ", socketId: ", socketId)
 				if (broadcastDevice === device) {
-					// console.log("this is broadcastDevice")
+					console.log("this is broadcastDevice")
 					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
 					const nextPucks = generatePuckMessage(puckElements, device)
 
@@ -674,30 +666,13 @@ function updatePuckCollisions(device, devices) {
 function isPuckOnBoard(puck, currentDevice, devices) {
 	const boardWidth = getBoardWidth(devices)
 	const boardLength = getBoardLength(devices)
-	const {x: devX, y: devY} = puck.position
-	let isOnBoard
-
-	if (currentDevice.directionY) {
-		isOnBoard = (
-			(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
-			(devY >= 0 && devY <= boardLength)
-		)
-
-		// if (device.directionY) {
-		// 	console.log("lengthOffset: ", lengthOffset, ", device.height: ", device.height, ", puck.position.y: ", puck.position.y, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
-		// 	console.log("1: ", devX >= wallHeight, ", 2: ", devX <= (boardWidth - wallHeight), ", 3: ", devY >= lengthOffset, ", 4: ", devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
-		// 	console.log("devY: ", devY, ", device.directionY: ", device.directionY)
-		// }
-
-	} else {
-		isOnBoard = (
-			(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
-			(devX >= 0 && devX <= boardLength)
-		)
-		// console.log("1: ", devY >= wallHeight, ", 2: ", devY <= (boardWidth - wallHeight), ", 3: ", devX >= lengthOffset, ", 4: ", devX <= (lengthOffset + device.width), ", isOnDevice: ", isOnDevice)
-	}
-
-	return isOnBoard
+	const [stdPuck, ...stdPucks] = puckStateToMessage([puck], currentDevice, devices)
+	const {x: devX, y: devY} = stdPuck.position
+	
+	return (
+		(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+		(devY >= 0 && devY <= boardLength)
+	)
 } 
 
 
@@ -705,54 +680,17 @@ function getBroadcastDevice(puck, devices, socketId) {
 	const currentDevice = devices[socketId]
 	const boardWidth = getBoardWidth(devices)
 	const boardLength = getBoardLength(devices)
+	const [stdPuck, ...stdPucks] = puckStateToMessage([puck], currentDevice, devices)
+	const {x: devX, y: devY} = stdPuck.position
 
-	// console.log("getBoadcastDevice devices: ", devices, ", puck.position: ", puck.position) //TODO: make sure all devices and pucks are present
-	for(let deviceKey in devices) {
-
-		// console.log("deviceKey: ", deviceKey)
+	for (let deviceKey in devices) {
 		const device = devices[deviceKey]
 		const lengthOffset = getLengthOffset(deviceKey, devices)
-		const {x: devX, y: devY} = puck.position
-		let isOnDevice
-
-		//BIG TODO: rework from scratch and transform the puck using stateToMessage
-		//also keep in mind lengthOfset needs to be modified for device.inverted 
-
-		//maybe the directionY only matters for the actual device, not the one in the loop
-		// maybe it matters the direction of both - be cuase the loop device directionY is necessary to decide wich to use, device.height or device.width
-		if (!currentDevice.inverted) {
-			if (currentDevice.directionY) {
-				isOnDevice = (
-					(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
-					(devY >= lengthOffset && devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
-				)
-
-			} else {
-				isOnDevice = (
-					(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
-					(devX >= lengthOffset && devX <= (lengthOffset + (device.directionY ? device.width : device.height)))
-				)
-			}
-		} else {
-			//TODO: here the puck coordinates should be converted so 
-			if (currentDevice.directionY) {
-				isOnDevice = (
-					(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
-					(
-						devY >= (boardLength - lengthOffset - (device.directionY ? device.height : device.width)) &&
-						devY <= (boardLength - lengthOffset)
-					)
-				)
-			} else {
-				isOnDevice = (
-					(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
-					(
-						devX >= (boardLength - lengthOffset - (device.directionY ? device.height : device.width)) &&
-						devX <= (boardLength - lengthOffset)
-					)
-				)
-			}
-		}
+		const deviceLength = device.directionY ? device.height : device.width
+		let isOnDevice = (
+			(devX >= wallHeight && devX <= (boardWidth - wallHeight)) &&
+			(devY >= lengthOffset && devY <= (lengthOffset + deviceLength))
+		)
 
 		if (isOnDevice) {
 			lastBroadcaster = device
@@ -796,15 +734,9 @@ export function getLengthOffset (socketId, devices) {
 
 	return Object.values(devices)
 		.filter(dev => {
-			if (!device.inverted) {
-				return dev &&
-					dev.timestamp &&
-					parseInt(dev.timestamp) < parseInt(device.timestamp)
-			} else {
-				return dev &&
-					dev.timestamp &&
-					parseInt(dev.timestamp) > parseInt(device.timestamp)
-			}
+			return dev &&
+				dev.timestamp &&
+				parseInt(dev.timestamp) < parseInt(device.timestamp)
 		})
 		.reduce((offset, nextDevice) => {
 			return offset + (nextDevice.directionY ? nextDevice.height : nextDevice.width)
@@ -823,11 +755,6 @@ export function isBoardActive (pucks = []) {
 }
 
 export function updatePucks (pucks) {
-	// return {
-	// 	type: UPDATE_PUCKS,
-	// 	pucks
-	// }
-
 	return (dispatch, getState) => {
 		const {boardConfig: {devices, socketId}} = getState()
 		const device = devices[socketId]
@@ -878,7 +805,6 @@ export function puckStateToMessage (pucks, device, devices) {
 		let position = {...puck.position}
 		let velocity = {...puck.velocity}
 
-		// console.log("angle: ", angle, ", position: ", position, ", velocity: ", velocity)
 		//add 90deg if !directionY
 		if (!device.directionY) {
 			angle -= Math.PI / 2
@@ -899,7 +825,6 @@ export function puckStateToMessage (pucks, device, devices) {
 			velocity.y = -velocity.y
 
 			if (device.directionY) {
-				//NOT sure if this should be flipped by boardWidth or device.width - should boe boardWidth, b/c svg is transformed to center boardWidth
 				position.x = boardWidth - position.x
 				position.y = boardLength - position.y
 			} else {
@@ -909,6 +834,7 @@ export function puckStateToMessage (pucks, device, devices) {
 		}
 
 		return {
+			label: puck.label,
 			angle,
 			position,
 			velocity
@@ -919,7 +845,6 @@ export function puckStateToMessage (pucks, device, devices) {
 export function puckMessageToState (pucks, device, devices) {
 	const boardWidth = getBoardWidth(devices)
 	const boardLength = getBoardLength(devices)
-	//Convert pucks from message to device orientation
 
 	if (!Array.isArray(pucks)) {
 		pucks = Object.values(pucks)
@@ -959,6 +884,7 @@ export function puckMessageToState (pucks, device, devices) {
 		}
 
 		return {
+			label: puck.label,
 			angle,
 			position,
 			velocity
@@ -968,103 +894,40 @@ export function puckMessageToState (pucks, device, devices) {
 
 export function getScoreFromPucks(pucks=[], devices={}, socketId) {
 	const device = devices[socketId]
+	const stdPucks = puckStateToMessage(pucks, device, devices)
 	const boardLength = getBoardLength(devices)
 	const boardWidth = getBoardWidth(devices)
 	let redScore = 0
 	let blueScore = 0
 
+
 	//NOTE: these are puckElements
-	pucks.forEach(puck => {
-		if (device.directionY && puck.position.x > wallHeight && puck.position.x < (boardWidth - wallHeight)) {
-			if (!device.inverted) {
-				if (puck.position.y > boardLength) {
-					//dont count
-				} else if (puck.position.y > (boardLength - scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.y > (boardLength - 2 * scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.y > (boardLength - 3 * scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
+	stdPucks.forEach(puck => {
+		const {x: puckX, y: puckY} = puck.position
+
+		console.log("getScoreFromPucks puckX: ", puckX, ", puckY: ", puckY, ", boardLength: ", boardLength)
+		if (puckX > wallHeight && puckX < (boardWidth - wallHeight)) {
+			console.log("puckX inbounds")
+			if (puckY > boardLength) {
+				//dont count
+				console.log("puckY greater than boardLength")
+			} else if (puckY > (boardLength - scoreBoxHeight)) {
+				if (puck.label === TEAM_TYPES.RED) {
+					redScore += 3
+				} else if (puck.label === TEAM_TYPES.BLUE) {
+					blueScore += 3
 				}
-			} else {
-				if (puck.position.y < 0) {
-					//dont count
-				} else if (puck.position.y < scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.y < 2 * scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.y < 3 * scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
+			} else if (puckY > (boardLength - 2 * scoreBoxHeight)) {
+				if (puck.label === TEAM_TYPES.RED) {
+					redScore += 2
+				} else if (puck.label === TEAM_TYPES.BLUE) {
+					blueScore += 2
 				}
-			}
-		} else if (puck.position.y > wallHeight && puck.position.y < (boardWidth - wallHeight)) {
-			if (!device.inverted) {
-				if (puck.position.x > boardLength) {
-					//dont count
-				} else if (puck.position.x > (boardLength - scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.x > (boardLength - 2 * scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.x > (boardLength - 3 * scoreBoxHeight)) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
-				}
-			} else {
-				if (puck.position.x < 0) {
-					//dont count
-				} else if (puck.position.x < scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 3
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 3
-					}
-				} else if (puck.position.x < 2 * scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 2
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 2
-					}
-				} else if (puck.position.x < 3 * scoreBoxHeight) {
-					if (puck.label === TEAM_TYPES.RED) {
-						redScore += 1
-					} else if (puck.label === TEAM_TYPES.BLUE) {
-						blueScore += 1
-					}
+			} else if (puckY > (boardLength - 3 * scoreBoxHeight)) {
+				if (puck.label === TEAM_TYPES.RED) {
+					redScore += 1
+				} else if (puck.label === TEAM_TYPES.BLUE) {
+					blueScore += 1
 				}
 			}
 		}
@@ -1099,8 +962,6 @@ export function getGameState() {
 				++bluePuckCount
 			}
 		})
-
-		// console.log("redPuckCount: ", redPuckCount, ", bluePuckCount: ", bluePuckCount, ", isRedsTurn: ", redPuckCount <= bluePuckCount)
 
 		return {
 			score: getScoreFromPucks(puckElements, devices, socketId), //{red: 4, blue: 1}
@@ -1142,18 +1003,6 @@ export function showOrientationModal() {
 		type: SHOW_ORIENTATION_MODAL
 	}
 }
-
-// export function showAllowJoinModal() {
-// 	return {
-// 		type: SHOW_ALLOW_JOIN_MODAL
-// 	}
-// }
-
-// export cancelModal() {
-// 	return {
-// 		type: CANCEL_MODAL
-// 	}
-// }
 
 export function acceptModal() {
 	broadcastAcceptModal()
