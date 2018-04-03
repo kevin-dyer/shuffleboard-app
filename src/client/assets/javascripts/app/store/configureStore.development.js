@@ -3,6 +3,9 @@ import { persistState } from 'redux-devtools';
 import promiseMiddleware from 'redux-promise';
 import createLogger from 'redux-logger';
 import thunk from 'redux-thunk';
+import { routerMiddleware } from 'react-router-redux'
+import { browserHistory } from 'react-router';
+
 
 import rootReducer from '../reducer';
 import DevTools from '../DevTools';
@@ -14,12 +17,13 @@ import DevTools from '../DevTools';
  * with your standard DevTools monitor gives you great flexibility.
  */
 const logger = createLogger();
-
+const routerMid = routerMiddleware(browserHistory)
 const middlewares = [
   promiseMiddleware,
   // logger,
   require('redux-immutable-state-invariant')(),
-  thunk
+  thunk,
+  routerMid
 ];
 
 // By default we try to read the key from ?debug_session=<key> in the address bar
@@ -28,10 +32,9 @@ const getDebugSessionKey = function () {
   return (matches && matches.length) ? matches[1] : null;
 };
 
-const enhancer = compose(
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+const enhancer = composeEnhancers(
   applyMiddleware(...middlewares),
-  // window.devToolsExtension ? window.devToolsExtension() : DevTools.instrument(),
-  // Optional. Lets you write ?debug_session=<key> in address bar to persist debug sessions
   persistState(getDebugSessionKey())
 );
 

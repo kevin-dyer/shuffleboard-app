@@ -1,12 +1,15 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
 import { Link, withRouter } from 'react-router';
+import { push } from 'react-router-redux'
 // import {withRouter} from 'react-router-dom';
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
+import GameDialog from '../GameDialog'
 import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
+import {showOrientationModal} from 'app/actions/shuffleboard-actions'
 import moment from 'moment'
 import _ from 'underscore'
 function distance ([x0, y0], [x1, y1]) {
@@ -18,8 +21,12 @@ const stateToProps = ({boardConfig}) => ({
 })
 
 
-@connect(stateToProps, {broadcastConfig})
-@withRouter
+@connect(stateToProps, {
+	broadcastConfig,
+	showOrientationModal,
+	push
+})
+// @withRouter
 export default class ConfigureBoard extends Component {
 	constructor() {
 		super()
@@ -27,6 +34,16 @@ export default class ConfigureBoard extends Component {
 		this.state = {touches: [], touchStatus: null}
 	}
 	componentDidMount() {
+		const {
+			boardConfig: {roomId},
+			push,
+			showOrientationModal
+		} = this.props
+
+		if (!roomId) {
+			console.log("redirecting to /start b/c no roomId")
+			push('/start')
+		}
 		const bodyElement = d3.select("body")
 	    .on("touchstart", this.nozoom)
 	    .on("touchmove", this.nozoom)
@@ -44,6 +61,9 @@ export default class ConfigureBoard extends Component {
     	.on("mousemove", ::this.mouseHandler);
 
 		this.throttledUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
+
+		//TODO: display instructions modal here!
+		showOrientationModal()
 	}
 
 	componentDidUpdate() {
@@ -51,14 +71,15 @@ export default class ConfigureBoard extends Component {
 			boardConfig: {
 				socketId,
 				devices,
-				userCount
+				clients=[]
 			},
-			router
+			push
 		} = this.props
 
-		if (Object.keys(devices).length === userCount) {
+		console.log("componentDidUpdate clients: ", clients, ", devices: ", devices)
+		if (Object.keys(devices).length === clients.length) {
 			console.log("Update is complete, redirect to game!")
-			router.push('/shuffleboard')
+			push('/shuffleboard')
 		}
 	}
 
@@ -147,8 +168,7 @@ export default class ConfigureBoard extends Component {
 				devices,
 				userCount
 			},
-			broadcastConfig,
-			router
+			broadcastConfig
 		} = this.props
 		const {touches} = this.state
 		const firstFinger = touches[0]
@@ -220,6 +240,8 @@ export default class ConfigureBoard extends Component {
         	top: 0,
         	left: 0
         }}>{this.state.touchStatus}</div>
+
+        <GameDialog/>
       </div>
     );
   }

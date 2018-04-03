@@ -2,11 +2,14 @@
 
 import React, { PropTypes } from 'react';
 import { Provider } from 'react-redux';
-import { Router } from 'react-router';
+import { Router, createRoutesFromReactChildren } from 'react-router';
+import { ConnectedRouter, routerReducer, routerMiddleware, push } from 'react-router-redux'
+
 
 import routes from './routes';
 import { SENTRY_URL } from './config';
 
+// const myRoutes = createRoutesFromReactChildren(routes)
 // If you use React Router, make this component
 // render <Router> with your routes. Currently,
 // only synchronous routes are hot reloaded, and
@@ -19,7 +22,7 @@ window.Raven && Raven.config(SENTRY_URL).install();
 const Root = ({ store, history }) => {
   let ComponentEl = (
     <Provider store={store}>
-      <Router history={history} routes={routes} />
+      <Router history={history} routes={routes}/>
     </Provider>
   );
 
@@ -29,8 +32,7 @@ const Root = ({ store, history }) => {
     ComponentEl = (
       <Provider store={store}>
         <div>
-          <Router history={history} routes={routes} />
-          {!window.devToolsExtension ? <DevTools /> : null}
+          <Router history={history} routes={routes}/>
         </div>
       </Provider>
     );

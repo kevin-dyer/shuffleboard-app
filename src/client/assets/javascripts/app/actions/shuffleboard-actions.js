@@ -31,6 +31,8 @@ export const SHOW_GAME_OVER_MODAL = 'SHOW_GAME_OVER_MODAL'
 // export const CANCEL_MODAL = 'CANCEL_MODAL'
 export const ACCEPT_MODAL = 'ACCEPT_MODAL'
 export const SHOW_NEXT_TURN_MODAL = 'SHOW_NEXT_TURN_MODAL'
+export const SHOW_ORIENTATION_MODAL = 'SHOW_ORIENTATION_MODAL'
+// export const SHOW_ALLOW_JOIN_MODAL = 'SHOW_ALLOW_JOIN_MODAL'
 
 export const TEAM_TYPES = {
 	RED: 'RED',
@@ -386,9 +388,10 @@ export function initBoard(shuffleboardCanvas) {
 		const boardLength = getBoardLength(devices)
 		const lengthOffset = getLengthOffset(socketId, devices)
 		const sortedDevices = sortDevices(devices)
-
 		let pucks = [] //TODO: update on events
 
+		//TODO: consider adjusting the puckRad based on boardWidth
+		console.log("puckRad/boardWidth ratio: ", Math.floor(puckRad / boardWidth * 100) / 100, ", should be 0.105")
 		engine = Engine.create()
 		world = engine.world
 		renderMatter = Render.create({
@@ -523,6 +526,8 @@ export function startTurn () {
 		const boardWidth = getBoardWidth(devices)
 		const boardLength = getBoardLength(devices)
 		const {isRedsTurn} = dispatch(getGameState())
+
+		console.log("startTurn called!")
 		
 		// console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
 		const padding = 50
@@ -627,7 +632,10 @@ export function startPollingPucks () {
 				// const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
 				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
 
-				console.log("broadcastDevice id: ", broadcastDevice && broadcastDevice.id, ", socketId: ", socketId)
+				// if (broadcastDevice === device) {
+				// 	console.log("me")
+				// }
+				// console.log("broadcastDevice id: ", broadcastDevice && broadcastDevice.id, ", socketId: ", socketId)
 				if (broadcastDevice === device) {
 					// console.log("this is broadcastDevice")
 					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
@@ -707,41 +715,47 @@ function getBroadcastDevice(puck, devices, socketId) {
 		const {x: devX, y: devY} = puck.position
 		let isOnDevice
 
-		
+		//BIG TODO: rework from scratch and transform the puck using stateToMessage
+		//also keep in mind lengthOfset needs to be modified for device.inverted 
 
 		//maybe the directionY only matters for the actual device, not the one in the loop
-		// maybe it matters the direction of both - be cuase the loop device directionY is necessary to device wich to use, device.height or device.width
-		
+		// maybe it matters the direction of both - be cuase the loop device directionY is necessary to decide wich to use, device.height or device.width
+		if (!currentDevice.inverted) {
+			if (currentDevice.directionY) {
+				isOnDevice = (
+					(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+					(devY >= lengthOffset && devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
+				)
 
-		if (currentDevice.directionY) {
-			isOnDevice = (
-				(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
-				(devY >= lengthOffset && devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
-			)
-
-			// if (device.directionY) {
-			// 	console.log("lengthOffset: ", lengthOffset, ", device.height: ", device.height, ", puck.position.y: ", puck.position.y, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
-			// 	console.log("1: ", devX >= wallHeight, ", 2: ", devX <= (boardWidth - wallHeight), ", 3: ", devY >= lengthOffset, ", 4: ", devY <= (lengthOffset + (device.directionY ? device.height : device.width)))
-			// 	console.log("devY: ", devY, ", device.directionY: ", device.directionY)
-			// }
-
+			} else {
+				isOnDevice = (
+					(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
+					(devX >= lengthOffset && devX <= (lengthOffset + (device.directionY ? device.width : device.height)))
+				)
+			}
 		} else {
-			isOnDevice = (
-				(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
-				(devX >= lengthOffset && devX <= (lengthOffset + (device.directionY ? device.width : device.height)))
-			)
-
-			
-
-			// console.log("1: ", devY >= wallHeight, ", 2: ", devY <= (boardWidth - wallHeight), ", 3: ", devX >= lengthOffset, ", 4: ", devX <= (lengthOffset + device.width), ", isOnDevice: ", isOnDevice)
+			//TODO: here the puck coordinates should be converted so 
+			if (currentDevice.directionY) {
+				isOnDevice = (
+					(devX >= wallHeight && devX <= (boardWidth - wallHeight)) && 
+					(
+						devY >= (boardLength - lengthOffset - (device.directionY ? device.height : device.width)) &&
+						devY <= (boardLength - lengthOffset)
+					)
+				)
+			} else {
+				isOnDevice = (
+					(devY >= wallHeight && devY <= (boardWidth - wallHeight)) &&
+					(
+						devX >= (boardLength - lengthOffset - (device.directionY ? device.height : device.width)) &&
+						devX <= (boardLength - lengthOffset)
+					)
+				)
+			}
 		}
 
-		// console.log("isOnDevice ", deviceKey,": ", isOnDevice, ", lengthOffset: ", lengthOffset)
-		// console.log("lengthOffset: ", lengthOffset, ", device.width: ", device.width, ", puck.position.x: ", puck.position.x, ", device.id: ", device.id, ", isOnDevice: ", isOnDevice)
 		if (isOnDevice) {
 			lastBroadcaster = device
-			
-			// console.log("getBroadcastDevice returning device: ", device.id)
 			return device
 		}
 	}
@@ -855,6 +869,7 @@ export function generatePuckMessage(pucks = [], device) {
 //NOTE: these two methods should be in socket-actions
 export function puckStateToMessage (pucks, device, devices) {
 	const boardWidth = getBoardWidth(devices)
+	const boardLength = getBoardLength(devices)
 	//transform pucks to broadcast in the correct (directionY) orientation
 	// console.log("puckStateToMessage pucks: ", pucks, ", device: ", device)
 	// console.log("first puck position IN STATE x: ", pucks[0].position.x, ", y: ", pucks[0].position.y)
@@ -878,6 +893,21 @@ export function puckStateToMessage (pucks, device, devices) {
 			velocity.y = tempVX
 		}
 
+		if (device.inverted) {
+			angle += Math.PI
+			velocity.x = -velocity.x
+			velocity.y = -velocity.y
+
+			if (device.directionY) {
+				//NOT sure if this should be flipped by boardWidth or device.width - should boe boardWidth, b/c svg is transformed to center boardWidth
+				position.x = boardWidth - position.x
+				position.y = boardLength - position.y
+			} else {
+				position.x = boardWidth - position.x
+				position.y = boardWidth - position.y
+			}
+		}
+
 		return {
 			angle,
 			position,
@@ -888,7 +918,12 @@ export function puckStateToMessage (pucks, device, devices) {
 
 export function puckMessageToState (pucks, device, devices) {
 	const boardWidth = getBoardWidth(devices)
+	const boardLength = getBoardLength(devices)
 	//Convert pucks from message to device orientation
+
+	if (!Array.isArray(pucks)) {
+		pucks = Object.values(pucks)
+	}
 	return pucks.map(puck => {
 		let angle = puck.angle
 		let position = {...puck.position}
@@ -907,17 +942,21 @@ export function puckMessageToState (pucks, device, devices) {
 			velocity.x = velocity.y
 			velocity.y = tempV
 		}
-		// if (device.inverted) {
-		// 	angle += Math.PI
 
-		// 	if (device.directionY) {
-		// 		position.y = boardLength - position.y
-		// 		velocity.y = -velocity.y
-		// 	} else {
-		// 		position.x = boardLength - position.x
-		// 		velocity.x = -velocity.x
-		// 	}
-		// }
+		if (device.inverted) {
+			angle += Math.PI
+			velocity.x = -velocity.x
+			velocity.y = -velocity.y
+
+			if (device.directionY) {
+				//NOT sure if this should be flipped by boardWidth or device.width - should boe boardWidth, b/c svg is transformed to center boardWidth
+				position.x = boardWidth - position.x
+				position.y = boardLength - position.y
+			} else {
+				position.x = boardLength - position.x
+				position.y = boardWidth - position.y
+			}
+		}
 
 		return {
 			angle,
@@ -1097,6 +1136,18 @@ export function showGameOverModal({score}) {
 		score
 	}
 }
+
+export function showOrientationModal() {
+	return {
+		type: SHOW_ORIENTATION_MODAL
+	}
+}
+
+// export function showAllowJoinModal() {
+// 	return {
+// 		type: SHOW_ALLOW_JOIN_MODAL
+// 	}
+// }
 
 // export cancelModal() {
 // 	return {

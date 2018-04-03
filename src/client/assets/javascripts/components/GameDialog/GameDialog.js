@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
-import { Link, withRouter } from 'react-router';
+// import { Link, withRouter } from 'react-router';
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
 import Dialog from 'material-ui/Dialog'
@@ -56,7 +56,7 @@ const stateToProps = ({boardConfig}) => ({
 
 	startTurn
 })
-@withRouter
+// @withRouter
 export default class GameDialog extends Component {
 	constructor() {
 		super()
@@ -72,7 +72,7 @@ export default class GameDialog extends Component {
 
 	handleAccept() {
 		const {
-			boardConfig: {pucks=[]},
+			boardConfig: {pucks=[], devices},
 			getGameState,
 			startTurn
 		} = this.props //May not need devices and pucks
@@ -84,13 +84,10 @@ export default class GameDialog extends Component {
 		if (gameState.isGameOver) {
 			// End Game
 			console.log("game has ended. TODO: reset board")
-		} else {
+		} else if (devices && Object.keys(devices).length > 0) {
+			console.log("calling startTurn from GameDialog handleAccept")
 			startTurn()
 		}
-
-		// const {acceptModal} = this.props
-
-		// acceptModal()
 	}
 
 	render() {
@@ -106,7 +103,7 @@ export default class GameDialog extends Component {
 			},
 			acceptModal
 		} = this.props
-		const device = devices[socketId] || {}
+		const device = devices[socketId] || {directionY: true, inverted: true}
 
 		//TODO: need to decide when to show/hide this modal based on state
 			// can fire generic action for each button
@@ -123,7 +120,6 @@ export default class GameDialog extends Component {
 		        onClick={acceptModal}
 		      />,
 		    ]}
-        modal={false}
         open={!accepted}
         onRequestClose={()=>{}}
         contentStyle={{

@@ -44,7 +44,8 @@ export default class Shuffleboard extends Component {
 		const {
 			boardConfig: {
 				devices,
-				socketId
+				socketId,
+				roomId
 			},
 			router,
 			startTurn,
@@ -58,14 +59,28 @@ export default class Shuffleboard extends Component {
 		const shuffleboardCanvas = document.getElementById('shuffleboard-canvas')
 
 
-		console.log("boardWidth: ", boardWidth)
+		// console.log("boardWidth: ", boardWidth)
 		//move into component will receive props
-		if (_.isEmpty(devices)) {
-			return router.push('/orientation')
+		console.log("Shuffleboard roomId: ", roomId)
+		if (!roomId) {
+			console.log("Shufflebloard redirecting to /start bc no roomId")
+			return router.push('/start')
 		}
 
 		initBoard(shuffleboardCanvas)
 		showStartGameModal()
+	}
+
+	componentDidUpdate({boardConfig: {clients: prevClients=[]}}) {
+		const {
+			boardConfig: {
+				clients=[]
+			}
+		} = this.props
+
+		if (prevClients.length !== clients.length && clients.length <= 1) {
+			console.log("There are not enough clients in the room, redirecting you back to Start Game Modal")
+		}
 	}
 
 

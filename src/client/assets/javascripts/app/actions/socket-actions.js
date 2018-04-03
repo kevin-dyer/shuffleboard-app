@@ -1,4 +1,5 @@
 import io from 'socket.io-client'
+import { push } from 'react-router-redux'
 import {
 	updatePucks,
 	puckStateToMessage,
@@ -14,6 +15,7 @@ const uri = `http://${window.location.hostname}:8080`
 // const uri = 'http://localhost'
 // const uri = `http://${window.location.hostname}:65080`
 let socket
+let roomId
 
 
 export const OPEN_GAME_SOCKET = 'OPEN_GAME_SOCKET'
@@ -29,6 +31,11 @@ export const RECEIVED_PUCKS = 'RECEIVED_PUCKS'
 export const TURN_HAS_STARTED = 'TURN_HAS_STARTED'
 export const MOUSE_DOWN = 'MOUSE_DOWN'
 export const MOUSE_UP = 'MOUSE_UP'
+export const START_GAME = 'START_GAME' //call this to get roomId
+export const ROOM_CREATED = 'ROOM_CREATED' //call this to set roomId to state
+export const JOIN_GAME = 'JOIN_GAME'
+export const JOINED_ROOM = 'JOINED_ROOM'
+export const GAME_STARTED = 'GAME_STARTED'
 
 export const init = (store) => {
 	//TODO: switch back when deploy to Heroku
@@ -37,19 +44,28 @@ export const init = (store) => {
 		.on('connect', function() {
 			store.dispatch(setSocketId(this.id))
 		})
+		.on('disconnect', () => {
+			console.log("Socket disconnected, attempting to socket.open()")
+  		socket.open();
+		});
 	//listen here for updates to remote board configs
 	socket.on(BROADCAST_BOARD_CONFIG, payload => {
 		console.log("ws RECEIVED_BOARD_CONFIG, payload: ", payload)
 		store.dispatch(receivedBoardConfig(payload))
 	})
 
-	socket.on(USER_JOINED, payload => {
-		console.log("USER_JOINED! payload.userCount: ", payload.userCount)
-		store.dispatch(updateUserCount(payload.userCount))
-	})
+	// socket.on(USER_JOINED, payload => {
+	// 	console.log("USER_JOINED!")
+	// 	// store.dispatch(updateUserCount(payload.userCount))
+	// })
 	socket.on(USER_LEFT, payload => {
+		//NOTE: payload contains: socketId
 		console.log("USER_LEFT!")
-		store.dispatch(updateUserCount(payload.userCount))
+		// store.dispatch(updateUserCount(payload.userCount))
+
+		// TODO: show pause game modal (or start new game) until user has returned
+		//Question: when user rejoins - will they enter with a different action type?
+
 	})
 
 	//TODO: Prevent this from fireing if originated from self
@@ -61,6 +77,8 @@ export const init = (store) => {
 
 		//NOTE: need to modify the payload based on the current device directionY and inverted
 		//TODO: transform payload here, get state from store.getState()
+
+		console.log("on BROADCAST_PUCKS payload: ", payload)
 		const nextPucks = puckMessageToState(payload, device, devices)
 
 		// console.log("nextPucks: ", nextPucks)
@@ -85,12 +103,60 @@ export const init = (store) => {
 		//NOTE: do not call acceptModal action creator b/c it will broadcast the message
 		store.dispatch({type: ACCEPT_MODAL})
 	})
+
+	//fired when YOU joined room
+	socket.on(JOINED_ROOM, payload => {
+		roomId = payload.roomId
+
+		console.log('JOINED_ROOM called, payload: ', payload)
+
+		// TODO: create reducer that will set the roomId and the PIN to state
+		store.dispatch({type: JOINED_ROOM, ...payload})
+
+		//redirect to origin
+		// also show modal to show: Proceed once all the devices have joined
+		// this can be a modal on componentDidMount of the trace
+		console.log("calling push /orientation")
+		store.dispatch(push('/orientation'))	
+	})
+
+	//fired when host joins room
+	socket.on(GAME_STARTED, payload => {
+		roomId = payload.roomId
+
+		console.log('JOINED_ROOM called, payload: ', payload)
+
+		// TODO: create reducer that will set the roomId and the PIN to state
+		store.dispatch({type: JOINED_ROOM, ...payload})
+
+		//redirect to origin
+		// also show modal to show: Proceed once all the devices have joined
+		// this can be a modal on componentDidMount of the trace
+		console.log("calling push /join")
+		store.dispatch(push('/join'))	
+	})
+
+	//fired when another user joined the room
+	socket.on(USER_JOINED, payload => {
+		console.log("USER_JOINED called, payload: ", payload)
+		store.dispatch({type: USER_JOINED, ...payload})
+	})
+
+	socket.on(USER_LEFT, payload => {
+		//NOTE: payload contains: socketId
+		console.log("USER_LEFT!")
+		// store.dispatch(updateUserCount(payload.userCount))
+
+		// TODO: show pause game modal (or start new game) until user has returned
+		//Question: when user rejoins - will they enter with a different action type?
+		store.dispatch({type: USER_LEFT, ...payload})
+	})
 }
 
 
 
-export const emit = (type, payload) =>
-	socket.emit(type, payload)
+export const emit = (type='', payload={}) =>
+	socket.emit(type, {...payload, roomId})
 
 export function openGameSocket() {
 	//open websocket here
@@ -138,7 +204,7 @@ export function broadcastPucks(pucks, device, devices) {
 	const outgoingPucks = puckStateToMessage(pucks, device, devices)
 
 
-
+	console.log("emit broadcastPucks outgoingPucks: ", outgoingPucks, ", state pucks: ", pucks)
 	// console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
 	emit(BROADCAST_PUCKS, outgoingPucks)
 }
@@ -160,6 +226,15 @@ export function broadcastAcceptModal() {
 	emit(ACCEPT_MODAL)
 }
 
+
+export function startGame() {
+	emit(START_GAME)
+}
+
+export function joinGame(roomPin) {
+	console.log("calling joinGame roomPin: ", roomPin)
+	emit(JOIN_GAME, {roomPin})
+}
 //IDK if i like the polling done here, id rather do it in shuffleboard where i have access to pucks
 // and i can tell whether they are still moving
 // let broadcastPoll = false
