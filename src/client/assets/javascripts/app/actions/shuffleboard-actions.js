@@ -815,7 +815,7 @@ export function puckStateToMessage (pucks, device, devices) {
 			position.x = boardWidth - position.y
 			position.y = tempPX
 
-			velocity.x = velocity.y
+			velocity.x = -velocity.y
 			velocity.y = tempVX
 		}
 
@@ -859,13 +859,13 @@ export function puckMessageToState (pucks, device, devices) {
 
 			//swap x and y
 			const tempPX = position.x
-			const tempV = velocity.x
+			const tempVX = velocity.x
 			//WHy doesnt this work
 			position.x = position.y
 			position.y = boardWidth - tempPX
 
 			velocity.x = velocity.y
-			velocity.y = tempV
+			velocity.y = -tempVX
 		}
 
 		if (device.inverted) {

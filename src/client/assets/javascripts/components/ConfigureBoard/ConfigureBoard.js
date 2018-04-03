@@ -60,7 +60,7 @@ export default class ConfigureBoard extends Component {
     	// .on("mousedown", this.mouseHandler)
     	.on("mousemove", ::this.mouseHandler);
 
-		this.throttledUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
+		this.debouncedUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
 
 		//TODO: display instructions modal here!
 		showOrientationModal()
@@ -105,7 +105,7 @@ export default class ConfigureBoard extends Component {
     	touches
     }, () => {
     	this.updateFingerTrace()
-    	this.throttledUpdate()
+    	this.debouncedUpdate()
     })
 	}
 
@@ -128,7 +128,7 @@ export default class ConfigureBoard extends Component {
     	touches
     }, () => {
     	this.updateFingerTrace()
-    	this.throttledUpdate()
+    	this.debouncedUpdate()
     })
 	}
 

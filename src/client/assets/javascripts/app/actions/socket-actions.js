@@ -78,7 +78,7 @@ export const init = (store) => {
 		//NOTE: need to modify the payload based on the current device directionY and inverted
 		//TODO: transform payload here, get state from store.getState()
 
-		console.log("on BROADCAST_PUCKS payload: ", payload)
+		// console.log("on BROADCAST_PUCKS payload: ", payload)
 		const nextPucks = puckMessageToState(payload, device, devices)
 
 		// console.log("nextPucks: ", nextPucks)
@@ -108,7 +108,7 @@ export const init = (store) => {
 	socket.on(JOINED_ROOM, payload => {
 		roomId = payload.roomId
 
-		console.log('JOINED_ROOM called, payload: ', payload)
+		// console.log('JOINED_ROOM called, payload: ', payload)
 
 		// TODO: create reducer that will set the roomId and the PIN to state
 		store.dispatch({type: JOINED_ROOM, ...payload})
@@ -116,7 +116,6 @@ export const init = (store) => {
 		//redirect to origin
 		// also show modal to show: Proceed once all the devices have joined
 		// this can be a modal on componentDidMount of the trace
-		console.log("calling push /orientation")
 		store.dispatch(push('/orientation'))	
 	})
 
@@ -124,15 +123,12 @@ export const init = (store) => {
 	socket.on(GAME_STARTED, payload => {
 		roomId = payload.roomId
 
-		console.log('JOINED_ROOM called, payload: ', payload)
-
 		// TODO: create reducer that will set the roomId and the PIN to state
 		store.dispatch({type: JOINED_ROOM, ...payload})
 
 		//redirect to origin
 		// also show modal to show: Proceed once all the devices have joined
 		// this can be a modal on componentDidMount of the trace
-		console.log("calling push /join")
 		store.dispatch(push('/join'))	
 	})
 
@@ -144,7 +140,7 @@ export const init = (store) => {
 
 	socket.on(USER_LEFT, payload => {
 		//NOTE: payload contains: socketId
-		console.log("USER_LEFT!")
+		console.log("USER_LEFT! payload: ", payload)
 		// store.dispatch(updateUserCount(payload.userCount))
 
 		// TODO: show pause game modal (or start new game) until user has returned
@@ -171,7 +167,7 @@ export function broadcastConfig(config) {
 	return dispatch => {
 		emit(BROADCAST_BOARD_CONFIG, config)
 
-		console.log("broadcastConfig called, calling receivedBoardConfig")
+		// console.log("broadcastConfig called, calling receivedBoardConfig")
 		dispatch(receivedBoardConfig(config)) //To update self in devices
 	}
 }
@@ -184,7 +180,7 @@ export function updateUserCount (userCount) {
 }
 
 function receivedBoardConfig(payload) {
-	console.log("receivedBoardConfig called!")
+	// console.log("receivedBoardConfig called!")
 	return {
 		type: RECEIVED_BOARD_CONFIG,
 		payload
@@ -204,13 +200,13 @@ export function broadcastPucks(pucks, device, devices) {
 	const outgoingPucks = puckStateToMessage(pucks, device, devices)
 
 
-	console.log("emit broadcastPucks outgoingPucks: ", outgoingPucks, ", state pucks: ", pucks)
+	// console.log("emit broadcastPucks outgoingPucks: ", outgoingPucks, ", state pucks: ", pucks)
 	// console.log("outgoingPucks broadcastPucks first puck position x: ", outgoingPucks[0].position.x, ", y: ", outgoingPucks[0].position.y)
 	emit(BROADCAST_PUCKS, outgoingPucks)
 }
 
 export function broadcastTurnStarted() {
-	console.log("emiting TURN_HAS_STARTED")
+	// console.log("emiting TURN_HAS_STARTED")
 	emit(TURN_HAS_STARTED)
 }
 
