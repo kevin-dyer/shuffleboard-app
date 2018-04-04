@@ -12,7 +12,7 @@ import TextField from 'material-ui/TextField';
 // import {
 
 // } from 'app/actions/shuffleboard-actions'
-import {startGame, joinGame} from 'app/actions/socket-actions'
+import {startGame, joinGame, broadcastDoneWaiting} from 'app/actions/socket-actions'
 
 
 const stateToProps = ({boardConfig}) => ({
@@ -42,6 +42,7 @@ export default class JoinGameDialog extends Component {
 		//TODO: redirect to /orientation
 		const {push} = this.props
 
+		broadcastDoneWaiting()
 		push('/orientation')
 	}
 

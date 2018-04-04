@@ -20,7 +20,11 @@ import {
 } from 'app/actions/socket-actions'
 require('images/wood_grain3.jpg')
 require('images/wood_grain3_side.jpg')
+import mouseDownSoundSrc from 'audio/shuffleboard_mousedown.mp3'
+import throwSoundSrc from 'audio/shuffleboard_throw.mp3'
+import gutterSoundSrc from 'audio/shuffleboard_gutter.mp3'
 import _ from 'underscore'
+
 
 export const SET_BOARD_DIMENSIONS = 'SET_BOARD_DIMENSIONS'
 export const ADD_PUCK = 'ADD_PUCK'
@@ -54,6 +58,9 @@ const puckRad = 35
 let isMouseDown = false
 const pollInterval = 50
 let lastBroadcaster
+let mouseDownSound
+let throwSound
+let gutterSound
 
 
 function getRenderWidth (device, boardWidth, boardLength) {
@@ -453,6 +460,11 @@ export function initBoard(shuffleboardCanvas) {
 
 			World.add(world, mouseConstraint);
 
+			//Initialize sounds
+			mouseDownSound = new Sound(mouseDownSoundSrc)
+			throwSound = new Sound(throwSoundSrc)
+			gutterSound = new Sound(gutterSoundSrc)
+
 			// keep the mouse in sync with rendering
 			renderMatter.mouse = mouse;
 
@@ -462,11 +474,18 @@ export function initBoard(shuffleboardCanvas) {
 				broadcastMouseDown()
 				// This should be fired to start polling self (NOTE: make sure the broadcast doesnt come back)
 				dispatch(startPollingPucks())
+
+				//TODO: fire the mouse down sound
+				mouseDownSound.play()
+
 			})
 
 			Events.on(mouseConstraint, "mouseup", (e) => {
 				mouseUp()
 				broadcastMouseUp()
+
+				//TODO: fire the throw sound
+				throwSound.play()
 			})
 		}
 
@@ -613,6 +632,8 @@ export function startPollingPucks () {
 					dispatch(showGameOverModal(gameState))
 				}
 
+				//TODO: stop the throw sound
+				throwSound.stop()
 				return
 			}
 
@@ -634,6 +655,41 @@ export function startPollingPucks () {
 					const nextPucks = generatePuckMessage(puckElements, device)
 
 					broadcastPucks(nextPucks, device, devices)
+				}
+
+				//Adjust the throwSound volume based on currentPuck
+				const speed = Math.floor(currentPuck.speed * 100) / 100
+				let nextVol = speed > 1 ? 1 : speed
+				// console.log("nextVol: ", nextVol)
+
+				throwSound.volume(nextVol)
+
+				//stop turn and activate gutter sound when puck is out of bounds
+				const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
+				if (!isPuckInBounds) {
+					console.log("puck is out of bounds, ending turn")
+
+					stopPollingPucks()
+					updatePuckCollisions(device, devices)
+
+					const gameState = dispatch(getGameState())
+
+					// console.log("gameState: ", gameState)
+
+					//TODO: broadcast turn complete
+					if (!gameState.isGameOver) {
+						dispatch(showNextTurnModal(gameState))
+					} else {
+						dispatch(showGameOverModal(gameState))
+					}
+
+					//stop the throw sound
+					throwSound.stop()
+					//play the gutter sound at half the volume
+					gutterSound.volume(nextVol / 2)
+					gutterSound.play()
+
+					return
 				}
 			}
 		}, pollInterval)
@@ -905,9 +961,9 @@ export function getScoreFromPucks(pucks=[], devices={}, socketId) {
 	stdPucks.forEach(puck => {
 		const {x: puckX, y: puckY} = puck.position
 
-		console.log("getScoreFromPucks puckX: ", puckX, ", puckY: ", puckY, ", boardLength: ", boardLength)
+		// console.log("getScoreFromPucks puckX: ", puckX, ", puckY: ", puckY, ", boardLength: ", boardLength)
 		if (puckX > wallHeight && puckX < (boardWidth - wallHeight)) {
-			console.log("puckX inbounds")
+			// console.log("puckX inbounds")
 			if (puckY > boardLength) {
 				//dont count
 				console.log("puckY greater than boardLength")
@@ -1009,4 +1065,23 @@ export function acceptModal() {
 	return {
 		type: ACCEPT_MODAL
 	}
+}
+
+//Sound Effects
+export function Sound(src) {
+    this.sound = document.createElement("audio");
+    this.sound.src = src;
+    this.sound.setAttribute("preload", "auto");
+    this.sound.setAttribute("controls", "none");
+    this.sound.style.display = "none";
+    document.body.appendChild(this.sound);
+    this.play = function(){
+      this.sound.play();
+    }
+    this.stop = function(){
+      this.sound.pause();
+    }
+    this.volume = function(vol) {
+    	this.sound.volume = vol;
+    }
 }

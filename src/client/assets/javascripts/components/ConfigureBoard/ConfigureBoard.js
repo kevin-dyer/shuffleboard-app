@@ -76,7 +76,7 @@ export default class ConfigureBoard extends Component {
 			push
 		} = this.props
 
-		console.log("componentDidUpdate clients: ", clients, ", devices: ", devices)
+		// console.log("componentDidUpdate clients: ", clients, ", devices: ", devices)
 		if (Object.keys(devices).length === clients.length) {
 			console.log("Update is complete, redirect to game!")
 			push('/shuffleboard')

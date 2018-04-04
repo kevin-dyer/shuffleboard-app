@@ -36,6 +36,7 @@ export const ROOM_CREATED = 'ROOM_CREATED' //call this to set roomId to state
 export const JOIN_GAME = 'JOIN_GAME'
 export const JOINED_ROOM = 'JOINED_ROOM'
 export const GAME_STARTED = 'GAME_STARTED'
+export const DONE_WAITING = 'DONE_WAITING'
 
 export const init = (store) => {
 	//TODO: switch back when deploy to Heroku
@@ -113,10 +114,8 @@ export const init = (store) => {
 		// TODO: create reducer that will set the roomId and the PIN to state
 		store.dispatch({type: JOINED_ROOM, ...payload})
 
-		//redirect to origin
-		// also show modal to show: Proceed once all the devices have joined
-		// this can be a modal on componentDidMount of the trace
-		store.dispatch(push('/orientation'))	
+		//redirect to Wait for Users modal
+		store.dispatch(push('/join'))	
 	})
 
 	//fired when host joins room
@@ -132,6 +131,10 @@ export const init = (store) => {
 		store.dispatch(push('/join'))	
 	})
 
+	socket.on(DONE_WAITING, payload => {
+		store.dispatch(push('/orientation'))
+	})
+
 	//fired when another user joined the room
 	socket.on(USER_JOINED, payload => {
 		console.log("USER_JOINED called, payload: ", payload)
@@ -140,7 +143,7 @@ export const init = (store) => {
 
 	socket.on(USER_LEFT, payload => {
 		//NOTE: payload contains: socketId
-		console.log("USER_LEFT! payload: ", payload)
+		// console.log("USER_LEFT! payload: ", payload)
 		// store.dispatch(updateUserCount(payload.userCount))
 
 		// TODO: show pause game modal (or start new game) until user has returned
@@ -231,12 +234,10 @@ export function joinGame(roomPin) {
 	console.log("calling joinGame roomPin: ", roomPin)
 	emit(JOIN_GAME, {roomPin})
 }
-//IDK if i like the polling done here, id rather do it in shuffleboard where i have access to pucks
-// and i can tell whether they are still moving
-// let broadcastPoll = false
-// export function startBroadcastingPucks () {
-// 	broadcastPoll = setInterval()
-// }
+
+export function broadcastDoneWaiting(roomPin) {
+	emit(DONE_WAITING)
+}
 
 
 

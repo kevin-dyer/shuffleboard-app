@@ -59,6 +59,15 @@ module.exports = {
           limit: 20000,
           name: 'fonts/[name].[ext]?[hash]'
         }
+      },
+      //audio
+      {
+        test: /\.(ogg|mp3|wav|mpe?g)$/i,
+        loader: 'url',
+        query: {
+          limit: 50000,
+          name: 'audio/[name].[ext]?[hash]'
+        }
       }
     ]
   },
