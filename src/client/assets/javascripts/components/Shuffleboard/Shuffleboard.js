@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
-import { Link, withRouter } from 'react-router';
+// import { Link, withRouter } from 'react-router';
+import { push } from 'react-router-redux'
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
 import Dialog from 'material-ui/Dialog'
@@ -32,14 +33,10 @@ const stateToProps = ({boardConfig}) => ({
 @connect(stateToProps, {
 	startTurn,
 	showStartGameModal,
-	initBoard
+	initBoard,
+	push
 })
-@withRouter
 export default class Shuffleboard extends Component {
-	constructor() {
-		super()
-
-	}
 	componentDidMount() {
 		const {
 			boardConfig: {
@@ -47,10 +44,10 @@ export default class Shuffleboard extends Component {
 				socketId,
 				roomId
 			},
-			router,
 			startTurn,
 			showStartGameModal,
-			initBoard
+			initBoard,
+			push
 		} = this.props
 		const boardLength = getBoardLength(devices)
 		const boardWidth = getBoardWidth(devices)
@@ -64,9 +61,10 @@ export default class Shuffleboard extends Component {
 		console.log("Shuffleboard roomId: ", roomId)
 		if (!roomId) {
 			console.log("Shufflebloard redirecting to /start bc no roomId")
-			return router.push('/start')
+			return push('/start')
 		}
 
+		console.log("calling initBoard, shuffleboardCanvas: ", shuffleboardCanvas)
 		initBoard(shuffleboardCanvas)
 		showStartGameModal()
 	}
@@ -120,6 +118,18 @@ export default class Shuffleboard extends Component {
 						<FullScrIcon color="#FFF"/>
 					</IconButton>
 				</div>*/}
+
+				{/*<div id="board-cover" style={{
+					width: '100%',
+					height: '100%',
+					backgroundColor: 'red',
+					opacity: 0.2,
+					zIndex: 0,
+					position: 'absolute',
+					top: 0,
+					left: 0,
+					pointerEvents: 'none'
+				}}/>*/}
 
 				<GameDialog/>
 			</div>

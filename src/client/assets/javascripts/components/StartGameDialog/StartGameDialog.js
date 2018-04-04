@@ -61,10 +61,14 @@ export default class StartGameDialog extends Component {
         <div>
         	<RaisedButton
         		label="Start New Game"
-        		onClick={startGame}
+        		onTouchTap={startGame}
         	/>
 
-        	<div className="join-game-container">
+        	<form onSubmit={e => {
+        		joinGame(pin);
+        		e.preventDefault();
+        		e.stopPropagation();
+        	}} className="join-game-container">
         		<TextField
         			floatingLabelText="Or Join a Game"
         			hintText="Enter PIN"
@@ -73,9 +77,9 @@ export default class StartGameDialog extends Component {
         		<FlatButton
         			label="Join"
         			disabled={!this.isPinValid(pin)}
-        			onClick={e => joinGame(pin)}
+        			type="submit"
         		/>
-        	</div>
+        	</form>
         </div>
       </Dialog>
 		);

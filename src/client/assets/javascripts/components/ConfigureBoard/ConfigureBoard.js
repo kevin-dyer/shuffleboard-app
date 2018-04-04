@@ -235,11 +235,11 @@ export default class ConfigureBoard extends Component {
     return (
       <div className="configure-board-container">
         <svg className="board-svg"/>
-        <div className="status" style={{
+        {/*<div className="status" style={{
         	position: 'absolute',
         	top: 0,
         	left: 0
-        }}>{this.state.touchStatus}</div>
+        }}>{this.state.touchStatus}</div>*/}
 
         <GameDialog/>
       </div>

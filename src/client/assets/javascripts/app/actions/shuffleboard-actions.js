@@ -61,6 +61,8 @@ let lastBroadcaster
 let mouseDownSound
 let throwSound
 let gutterSound
+let canvasElement
+let hasInitializedAudio = false
 
 
 function getRenderWidth (device, boardWidth, boardLength) {
@@ -398,6 +400,8 @@ export function initBoard(shuffleboardCanvas) {
 		const sortedDevices = sortDevices(devices)
 		let pucks = [] //TODO: update on events
 
+		canvasElement = shuffleboardCanvas
+
 		//TODO: consider adjusting the puckRad based on boardWidth
 		console.log("puckRad/boardWidth ratio: ", Math.floor(puckRad / boardWidth * 100) / 100, ", should be 0.105")
 		engine = Engine.create()
@@ -444,6 +448,13 @@ export function initBoard(shuffleboardCanvas) {
 
 		World.add(world, walls)
 
+		//Initialize sounds
+		mouseDownSound = new Sound(mouseDownSoundSrc)
+		throwSound = new Sound(throwSoundSrc)
+		gutterSound = new Sound(gutterSoundSrc)
+
+		console.log("initialized sounds")
+
 
 		// add mouse control to first device
 		if (sortedDevices[0] === device) {
@@ -460,11 +471,6 @@ export function initBoard(shuffleboardCanvas) {
 
 			World.add(world, mouseConstraint);
 
-			//Initialize sounds
-			mouseDownSound = new Sound(mouseDownSoundSrc)
-			throwSound = new Sound(throwSoundSrc)
-			gutterSound = new Sound(gutterSoundSrc)
-
 			// keep the mouse in sync with rendering
 			renderMatter.mouse = mouse;
 
@@ -475,8 +481,14 @@ export function initBoard(shuffleboardCanvas) {
 				// This should be fired to start polling self (NOTE: make sure the broadcast doesnt come back)
 				dispatch(startPollingPucks())
 
-				//TODO: fire the mouse down sound
+				//fire the mouse down sound
+				//NOTE: this will not work on mobile devices
 				mouseDownSound.play()
+
+				// canvasElement.style.border = '5px solid red'
+				// } else {
+				// 	canvasElement.style.border = 'none'
+				// }
 
 			})
 
@@ -485,8 +497,27 @@ export function initBoard(shuffleboardCanvas) {
 				broadcastMouseUp()
 
 				//TODO: fire the throw sound
+				//NOTE: this will not work on mobile devices
 				throwSound.play()
+
+				// canvasElement.style.border = 'none'
 			})
+
+			const canv = document.getElementById('shuffleboard-canvas').getElementsByTagName('canvas')[0]
+
+			console.log("canv: ", canv)
+
+			// canv.addEventListener('mousedown', e => {
+			// 	console.log("canv mousedown fired")
+			// 	mouseDownSound.play()
+			// 	return e
+			// })
+
+			// canv.addEventListener('mouseup', e => {
+			// 	console.log("canv mouseup fired")
+			// 	throwSound.play()
+			// 	return e
+			// })
 		}
 
 		// fit the render viewport to the scene
@@ -513,6 +544,26 @@ export function initBoard(shuffleboardCanvas) {
 		})
 	}
 }
+
+function mouseDownListener (e) {
+	console.log("mousedown handler")
+	mouseDownSound.play()
+}
+
+function mouseUpListener(e) {
+	console.log("mouseUp handler")
+	throwSound.play()
+}
+
+// function startSoundListeners() {
+// 	window.document.addEventListener('mousedown', mouseDownListener)
+// 	window.document.addEventListener('mouseup', mouseUpListener)
+// }
+
+// function stopSoundListeners() {
+// 	window.document.removeEventListener('mousedown', mouseDownListener)
+// 	window.document.removeEventListener('mouseup', mouseUpListener)
+// }
 
 export function mouseDown() {
 	isMouseDown = true
@@ -611,6 +662,8 @@ export function startPollingPucks () {
 
 		stopPollingPucks()
 
+		// startSoundListeners()
+
 		broadcastPoll = setInterval(() => {
 			// TODO: should check if puck is in bounds
 
@@ -634,6 +687,7 @@ export function startPollingPucks () {
 
 				//TODO: stop the throw sound
 				throwSound.stop()
+				// stopSoundListeners()
 				return
 			}
 
@@ -655,6 +709,11 @@ export function startPollingPucks () {
 					const nextPucks = generatePuckMessage(puckElements, device)
 
 					broadcastPucks(nextPucks, device, devices)
+
+					//TODO: for test - update style when is broadcastDevice
+					// canvasElement.style.border = '5px solid red'
+				} else {
+					// canvasElement.style.border = 'none'
 				}
 
 				//Adjust the throwSound volume based on currentPuck
@@ -689,6 +748,7 @@ export function startPollingPucks () {
 					gutterSound.volume(nextVol / 2)
 					gutterSound.play()
 
+					// stopSoundListeners()
 					return
 				}
 			}
@@ -1062,6 +1122,21 @@ export function showOrientationModal() {
 
 export function acceptModal() {
 	broadcastAcceptModal()
+
+	if (!hasInitializedAudio && mouseDownSound && throwSound && gutterSound) {
+		mouseDownSound.play().then(() => {
+			mouseDownSound.stop()
+		})
+		throwSound.play().then(() => {
+			throwSound.stop()
+		})
+		gutterSound.play().then(() => {
+			gutterSound.stop()
+		})
+
+		hasInitializedAudio = true
+	}
+
 	return {
 		type: ACCEPT_MODAL
 	}
@@ -1076,10 +1151,10 @@ export function Sound(src) {
     this.sound.style.display = "none";
     document.body.appendChild(this.sound);
     this.play = function(){
-      this.sound.play();
+      return this.sound.play();
     }
     this.stop = function(){
-      this.sound.pause();
+      return this.sound.pause();
     }
     this.volume = function(vol) {
     	this.sound.volume = vol;

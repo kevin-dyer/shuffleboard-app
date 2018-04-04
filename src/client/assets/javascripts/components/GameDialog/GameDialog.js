@@ -117,7 +117,7 @@ export default class GameDialog extends Component {
 		        label="Ok"
 		        primary={true}
 		        keyboardFocused={true}
-		        onClick={acceptModal}
+		        onTouchTap={acceptModal}
 		      />,
 		    ]}
         open={!accepted}
