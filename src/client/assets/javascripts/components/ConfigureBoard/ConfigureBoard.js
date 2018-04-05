@@ -10,7 +10,6 @@ import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
 import {showOrientationModal} from 'app/actions/shuffleboard-actions'
-import moment from 'moment'
 import _ from 'underscore'
 function distance ([x0, y0], [x1, y1]) {
 	return Math.pow((Math.pow((y1 - y0), 2) + Math.pow((x1 - x0), 2)), 0.5)
@@ -138,15 +137,12 @@ export default class ConfigureBoard extends Component {
 
 	updateFingerTrace() {
 		const line = d3.line()
-		  // .x(d => d[0])
 		  .x(d => {
-		  	// console.log("line x, d: ", d)
 		  	return d[0]
 		  })
 		  .y(d => d[1])
 		  .curve(d3.curveBasis)
 
-		// console.log("updateFingerTrace. this.state: ", this.state)
 
 		const traces = d3.select('.board-svg').selectAll('.finger-trace')
 			.data(this.state.touches)
@@ -189,11 +185,7 @@ export default class ConfigureBoard extends Component {
 		//Can store first and last x and y values
 		const firstTouch = touches.map(touchStream => touchStream[0])
 		const lastTouch = touches.map(touchStream => touchStream[touchStream.length - 1])
-		const firstFingerDist = this.getFingerDistance(firstTouch, directionY)
-		const lastFingerDist = this.getFingerDistance(lastTouch, directionY)
 		
-		console.log("firstFingerDist: ", firstFingerDist, ", lastFingerDist: ", lastFingerDist)
-
 		//TODO: can compare boardConfig.devices[0].lastFingerDist to firstFingerDist to get the px multiplier
 		//but skip for now, not even sure this is necessary
 		const boardConfig = {
@@ -202,25 +194,11 @@ export default class ConfigureBoard extends Component {
 			inverted,
 			firstTouch, //TODO: replace these with pixel density
 			lastTouch,
-			firstFingerDist,
-			lastFingerDist,
 			width: window.innerWidth,
-			height: window.innerHeight,
-			timestamp: moment().valueOf()
+			height: window.innerHeight
 		}
 
 		broadcastConfig(boardConfig)
-
-		//TODO: this should be moved into didRee
-		//determine if update is finished (devices.length === userCount && )
-		// console.log("devices: ", devices, ", userCount: ", userCount, ", ===: ", Object.keys(devices).length === userCount)
-		// if (Object.keys(devices).length === userCount) {
-		// 	console.log("Update is complete, redirect to game!")
-		// 	//should redirect to game board and use devices to create a new game board object
-		// 	//this will define order and dimensions of board
-		// 	// console.log("history: ", history)
-		// 	router.push('/shuffleboard')
-		// }
 	}
 
 	getFingerDistance(touchPoints, directionY) {
@@ -235,12 +213,6 @@ export default class ConfigureBoard extends Component {
     return (
       <div className="configure-board-container">
         <svg className="board-svg"/>
-        {/*<div className="status" style={{
-        	position: 'absolute',
-        	top: 0,
-        	left: 0
-        }}>{this.state.touchStatus}</div>*/}
-
         <GameDialog/>
       </div>
     );

@@ -9,6 +9,8 @@ import {
 	mouseUp,
 	ACCEPT_MODAL
 } from 'app/actions/shuffleboard-actions'
+import moment from 'moment'
+
 // const uri = 'https://localhost:8080'
 // const uri = window.location.origin
 const uri = `http://${window.location.hostname}:8080`
@@ -168,10 +170,8 @@ export function closeGameSocket() {
 //call this to broadcast local config
 export function broadcastConfig(config) {
 	return dispatch => {
+		//NOTE: this also broadcasts back to this client, timestamp is sent on response
 		emit(BROADCAST_BOARD_CONFIG, config)
-
-		// console.log("broadcastConfig called, calling receivedBoardConfig")
-		dispatch(receivedBoardConfig(config)) //To update self in devices
 	}
 }
 
@@ -186,7 +186,8 @@ function receivedBoardConfig(payload) {
 	// console.log("receivedBoardConfig called!")
 	return {
 		type: RECEIVED_BOARD_CONFIG,
-		payload
+		payload,
+		timestamp: moment().valueOf()
 	}
 }
 function setSocketId (socketId) {

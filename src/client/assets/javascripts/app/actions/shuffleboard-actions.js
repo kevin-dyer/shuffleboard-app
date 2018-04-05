@@ -482,7 +482,6 @@ export function initBoard(shuffleboardCanvas) {
 				dispatch(startPollingPucks())
 
 				//fire the mouse down sound
-				//NOTE: this will not work on mobile devices
 				mouseDownSound.play()
 
 				// canvasElement.style.border = '5px solid red'
@@ -502,22 +501,6 @@ export function initBoard(shuffleboardCanvas) {
 
 				// canvasElement.style.border = 'none'
 			})
-
-			const canv = document.getElementById('shuffleboard-canvas').getElementsByTagName('canvas')[0]
-
-			console.log("canv: ", canv)
-
-			// canv.addEventListener('mousedown', e => {
-			// 	console.log("canv mousedown fired")
-			// 	mouseDownSound.play()
-			// 	return e
-			// })
-
-			// canv.addEventListener('mouseup', e => {
-			// 	console.log("canv mouseup fired")
-			// 	throwSound.play()
-			// 	return e
-			// })
 		}
 
 		// fit the render viewport to the scene
@@ -554,16 +537,6 @@ function mouseUpListener(e) {
 	console.log("mouseUp handler")
 	throwSound.play()
 }
-
-// function startSoundListeners() {
-// 	window.document.addEventListener('mousedown', mouseDownListener)
-// 	window.document.addEventListener('mouseup', mouseUpListener)
-// }
-
-// function stopSoundListeners() {
-// 	window.document.removeEventListener('mousedown', mouseDownListener)
-// 	window.document.removeEventListener('mouseup', mouseUpListener)
-// }
 
 export function mouseDown() {
 	isMouseDown = true
@@ -662,8 +635,6 @@ export function startPollingPucks () {
 
 		stopPollingPucks()
 
-		// startSoundListeners()
-
 		broadcastPoll = setInterval(() => {
 			// TODO: should check if puck is in bounds
 
@@ -696,13 +667,8 @@ export function startPollingPucks () {
 
 				const currentPuck = puckElements[puckElements.length - 1]
 				//check if location of puck is inside device
-				// const deviceHasPuck = isPuckOnDevice(currentPuck, socketId, devices)
 				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
 
-				// if (broadcastDevice === device) {
-				// 	console.log("me")
-				// }
-				// console.log("broadcastDevice id: ", broadcastDevice && broadcastDevice.id, ", socketId: ", socketId)
 				if (broadcastDevice === device) {
 					console.log("this is broadcastDevice")
 					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
@@ -726,29 +692,19 @@ export function startPollingPucks () {
 				//stop turn and activate gutter sound when puck is out of bounds
 				const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
 				if (!isPuckInBounds) {
-					console.log("puck is out of bounds, ending turn")
-
-					stopPollingPucks()
-					updatePuckCollisions(device, devices)
-
-					const gameState = dispatch(getGameState())
-
-					// console.log("gameState: ", gameState)
-
-					//TODO: broadcast turn complete
-					if (!gameState.isGameOver) {
-						dispatch(showNextTurnModal(gameState))
-					} else {
-						dispatch(showGameOverModal(gameState))
-					}
-
 					//stop the throw sound
 					throwSound.stop()
 					//play the gutter sound at half the volume
 					gutterSound.volume(nextVol / 2)
 					gutterSound.play()
 
-					// stopSoundListeners()
+					//instead of ending turn immediately, just stop the puck from moving, or slow down lots
+					//let the above conditional end the game
+					Body.setVelocity(currentPuck, {
+						x: 0.75 * currentPuck.velocity.x,
+						y: 0.75 * currentPuck.velocity.y
+					})
+
 					return
 				}
 			}
