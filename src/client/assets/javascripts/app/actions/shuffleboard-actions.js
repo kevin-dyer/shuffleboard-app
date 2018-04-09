@@ -63,6 +63,7 @@ let throwSound
 let gutterSound
 let canvasElement
 let hasInitializedAudio = false
+let puckInGutter = false //for firing gutter sound only once
 
 
 function getRenderWidth (device, boardWidth, boardLength) {
@@ -493,11 +494,10 @@ export function initBoard(shuffleboardCanvas) {
 
 			Events.on(mouseConstraint, "mouseup", (e) => {
 				mouseUp()
-				broadcastMouseUp()
 
-				//TODO: fire the throw sound
-				//NOTE: this will not work on mobile devices
-				throwSound.play()
+				//NOTE: need this to fire throwSound on other devices
+				//this will come into socket-actions - so how can i fire something here?
+				broadcastMouseUp()
 
 				// canvasElement.style.border = 'none'
 			})
@@ -515,7 +515,8 @@ export function initBoard(shuffleboardCanvas) {
 				}
 		});
 
-		// Sets the pixel ratio of the renderer and updates the canvas. To automatically detect the correct ratio, pass the string 'auto' for pixelRatio.
+		// Sets the pixel ratio of the renderer and updates the canvas.
+		// To automatically detect the correct ratio, pass the string 'auto' for pixelRatio.
 		Render.setPixelRatio(renderMatter, 'auto')
 
 		shuffleboardCanvas.style = createCanvasStyle({
@@ -528,26 +529,21 @@ export function initBoard(shuffleboardCanvas) {
 	}
 }
 
-function mouseDownListener (e) {
-	console.log("mousedown handler")
-	mouseDownSound.play()
-}
-
-function mouseUpListener(e) {
-	console.log("mouseUp handler")
-	throwSound.play()
-}
 
 export function mouseDown() {
 	isMouseDown = true
+
+	//NOTE: not playing the mouseDown sound here,
+	//because I only want the first device to play the mousedown sound
 }
 
 export function mouseUp() {
 	isMouseDown = false
+
+	throwSound.stop()
+	throwSound.play()
 }
 
-//TODO: this should determine puck type to add from game state,
-// and actually add the puck to the world
 export function startTurn () {
 	return (dispatch, getState) => {
 		const {
@@ -562,9 +558,10 @@ export function startTurn () {
 		const boardLength = getBoardLength(devices)
 		const {isRedsTurn} = dispatch(getGameState())
 
+
+		puckInGutter = false
 		console.log("startTurn called!")
 		
-		// console.log("boardWidth: ", boardWidth, ", boardLength: ", boardLength)
 		const padding = 50
 		const team = isRedsTurn
 			? TEAM_TYPES.RED
@@ -677,9 +674,9 @@ export function startPollingPucks () {
 					broadcastPucks(nextPucks, device, devices)
 
 					//TODO: for test - update style when is broadcastDevice
-					// canvasElement.style.border = '5px solid red'
+					canvasElement.style.border = '2px solid red'
 				} else {
-					// canvasElement.style.border = 'none'
+					canvasElement.style.border = 'none'
 				}
 
 				//Adjust the throwSound volume based on currentPuck
@@ -694,9 +691,16 @@ export function startPollingPucks () {
 				if (!isPuckInBounds) {
 					//stop the throw sound
 					throwSound.stop()
-					//play the gutter sound at half the volume
-					gutterSound.volume(nextVol / 2)
-					gutterSound.play()
+
+					//play gutter sound only once per turn (if puck is in gutter)
+					if (!puckInGutter) {
+						puckInGutter = true
+						//play the gutter sound at half the volume
+						gutterSound.volume(nextVol / 2)
+						gutterSound.play()
+					}
+
+
 
 					//instead of ending turn immediately, just stop the puck from moving, or slow down lots
 					//let the above conditional end the game
@@ -748,12 +752,13 @@ function isPuckOnBoard(puck, currentDevice, devices) {
 } 
 
 
+
 function getBroadcastDevice(puck, devices, socketId) {
 	const currentDevice = devices[socketId]
 	const boardWidth = getBoardWidth(devices)
 	const boardLength = getBoardLength(devices)
-	const [stdPuck, ...stdPucks] = puckStateToMessage([puck], currentDevice, devices)
-	const {x: devX, y: devY} = stdPuck.position
+	const [stdPuck] = puckStateToMessage([puck], currentDevice, devices)
+	let {x: devX, y: devY} = stdPuck.position
 
 	for (let deviceKey in devices) {
 		const device = devices[deviceKey]
@@ -770,6 +775,7 @@ function getBroadcastDevice(puck, devices, socketId) {
 		}
 	}
 
+	//return lastBroadcaster if puck is completely off board
 	return lastBroadcaster
 }
 
@@ -901,7 +907,7 @@ export function puckStateToMessage (pucks, device, devices) {
 				position.y = boardLength - position.y
 			} else {
 				position.x = boardWidth - position.x
-				position.y = boardWidth - position.y
+				position.y = boardLength - position.y
 			}
 		}
 

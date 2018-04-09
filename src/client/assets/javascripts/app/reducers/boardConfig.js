@@ -23,12 +23,13 @@ import {
 
 import _ from 'underscore'
 
-const mergeBoardConfigs = (devices, device) => {
+const mergeBoardConfigs = (devices, device, timestamp) => {
   return {
     ...devices,
     [device.id]: {
       ...devices[device.id],
-      ...device
+      ...device,
+      timestamp
     }
   }
 }
@@ -53,7 +54,7 @@ export function boardConfig(state = initialState, action = {}) {
     case RECEIVED_BOARD_CONFIG:
       return {
         ...state,
-        devices: mergeBoardConfigs(state.devices, action.payload)
+        devices: mergeBoardConfigs(state.devices, action.payload, action.timestamp)
       }
 
     case SET_SOCKET_ID:

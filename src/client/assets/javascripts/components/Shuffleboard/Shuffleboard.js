@@ -64,7 +64,6 @@ export default class Shuffleboard extends Component {
 			return push('/start')
 		}
 
-		console.log("calling initBoard, shuffleboardCanvas: ", shuffleboardCanvas)
 		initBoard(shuffleboardCanvas)
 		showStartGameModal()
 	}
