@@ -6,6 +6,7 @@ import { push } from 'react-router-redux'
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
 import GameDialog from '../GameDialog'
+import OrientationDialog from '../OrientationDialog'
 import * as d3 from 'd3';
 import './ConfigureBoard.scss';
 import {broadcastConfig} from 'app/actions/socket-actions';
@@ -213,7 +214,7 @@ export default class ConfigureBoard extends Component {
     return (
       <div className="configure-board-container">
         <svg className="board-svg"/>
-        <GameDialog/>
+        <OrientationDialog/>
       </div>
     );
   }

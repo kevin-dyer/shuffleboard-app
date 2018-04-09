@@ -134,6 +134,8 @@ export default class GameDialog extends Component {
         	maxWidth: 350,
         	maxHeight: 400
         }}
+        onMousedown={e => {e.preventDefault(); e.stopPropagation()}}
+        onMouseup={e => {e.preventDefault(); e.stopPropagation()}}
       >
         {body}
       </Dialog>

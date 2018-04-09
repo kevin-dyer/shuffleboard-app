@@ -13,6 +13,7 @@ import _ from 'underscore'
 import {
 } from 'app/actions/shuffleboard-actions'
 import {startGame, joinGame} from 'app/actions/socket-actions'
+import './StartGameDialog.scss'
 
 
 const stateToProps = ({boardConfig}) => ({
@@ -54,14 +55,15 @@ export default class StartGameDialog extends Component {
 		// console.log("StartGameDialog pin state: ", pin)
 		return (
 			<Dialog
-        title={'Start or Join a Game'}
+        title='Play Shuffleboard!'
         open={true}
         onRequestClose={()=>{}}
       >
         <div>
         	<RaisedButton
-        		label="Start New Game"
+        		label="Start a New Game"
         		onTouchTap={startGame}
+        		primary={!pin}
         	/>
 
         	<form onSubmit={e => {
@@ -78,6 +80,7 @@ export default class StartGameDialog extends Component {
         			label="Join"
         			disabled={!this.isPinValid(pin)}
         			type="submit"
+        			primary={!!pin}
         		/>
         	</form>
         </div>

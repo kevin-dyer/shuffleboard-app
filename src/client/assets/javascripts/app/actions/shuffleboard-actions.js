@@ -482,7 +482,8 @@ export function initBoard(shuffleboardCanvas) {
 				// This should be fired to start polling self (NOTE: make sure the broadcast doesnt come back)
 				dispatch(startPollingPucks())
 
-				//fire the mouse down sound
+				//fire the mouse down sound and stop throwSound
+				throwSound.stop()
 				mouseDownSound.play()
 
 				// canvasElement.style.border = '5px solid red'
@@ -667,16 +668,15 @@ export function startPollingPucks () {
 				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
 
 				if (broadcastDevice === device) {
-					console.log("this is broadcastDevice")
-					// console.log("deviceHasPuck! socketId: ", socketId, ", devices: ", devices)
+					// console.log("this is broadcastDevice")
 					const nextPucks = generatePuckMessage(puckElements, device)
 
 					broadcastPucks(nextPucks, device, devices)
 
 					//TODO: for test - update style when is broadcastDevice
-					canvasElement.style.border = '2px solid red'
+					// canvasElement.style.border = '2px solid red'
 				} else {
-					canvasElement.style.border = 'none'
+					// canvasElement.style.border = 'none'
 				}
 
 				//Adjust the throwSound volume based on currentPuck
@@ -988,7 +988,7 @@ export function getScoreFromPucks(pucks=[], devices={}, socketId) {
 			// console.log("puckX inbounds")
 			if (puckY > boardLength) {
 				//dont count
-				console.log("puckY greater than boardLength")
+				// console.log("puckY greater than boardLength")
 			} else if (puckY > (boardLength - scoreBoxHeight)) {
 				if (puck.label === TEAM_TYPES.RED) {
 					redScore += 3

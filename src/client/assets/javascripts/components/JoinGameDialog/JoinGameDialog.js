@@ -6,14 +6,20 @@ import FlatButton from 'material-ui/FlatButton';
 import RaisedButton from 'material-ui/RaisedButton';
 import Dialog from 'material-ui/Dialog'
 import TextField from 'material-ui/TextField';
-// import {showAllowJoinModal} from 'app/actions/shuffleboard-actions'
-
-// import _ from 'underscore'
-// import {
-
-// } from 'app/actions/shuffleboard-actions'
+import PhoneIcon from 'material-ui/svg-icons/hardware/phone-android'
+import TouchIcon from 'material-ui/svg-icons/action/touch-app'
+import ArrowIcon from 'material-ui/svg-icons/action/trending-flat'
+import {blueGrey800, blueGrey600, blueGrey300} from 'material-ui/styles/colors'
 import {startGame, joinGame, broadcastDoneWaiting} from 'app/actions/socket-actions'
+import './JoinGameDialog.scss'
 
+const iconColor = blueGrey600
+const iconColor2 = blueGrey300
+const iconStyle = {
+	height: 40,
+	width: 40,
+	margin: '0'
+}
 
 const stateToProps = ({boardConfig}) => ({
 	boardConfig
@@ -54,22 +60,33 @@ export default class JoinGameDialog extends Component {
 			}={}
 		} = this.props
 
+
 		return (
 			<Dialog
-        title={`Game PIN: ${roomPin}`}
-        open={true}
-        onRequestClose={()=>{}}
-      >
-        <div>
-        	<div className="clients">
-        		{clients.length} clients
-        	</div>
-        	<RaisedButton
-        		label="Start Game"
-        		onTouchTap={::this.handleStartGame}
-        	/>
-        </div>
-      </Dialog>
+				title={`Game PIN: ${roomPin}`}
+				open={true}
+				onRequestClose={()=>{}}
+			>
+				<div>
+					<div className="instructions">
+						Continue once all clients have joined.
+					</div>
+
+					<div className="clients">
+						<div className="clients-container">
+							{clients.map(client =>
+								<PhoneIcon key={client} color={iconColor} style={iconStyle}/>
+							)}
+						</div>
+					</div>
+
+					<RaisedButton
+						label="Configure Board"
+						onTouchTap={::this.handleStartGame}
+						primary={true}
+					/>
+				</div>
+			</Dialog>
 		);
 	}
 }

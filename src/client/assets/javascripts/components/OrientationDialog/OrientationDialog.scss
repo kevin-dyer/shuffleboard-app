@@ -1,0 +1,50 @@
+@keyframes touch {
+    from {left: 0;}
+    to {left: 100%;}
+}
+@keyframes arrow {
+	from {width: 0;}
+	to {width: 100%;}
+}
+
+.orientation-container {
+	display: flex;
+	justify-content: center;
+
+	.inner-container {
+		position: relative;
+	}
+
+	.clients-container {
+		margin: 20px -15px;
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/*.animation-container {
+		margin: 0 20px;
+	}*/
+
+	.touch-animation {
+		position: absolute;
+		top: 63%;
+		left: 0;
+		transform: translate(-50%, -50%);
+		animation-name: touch;
+		animation-duration: 5s;
+		animation-iteration-count: infinite;
+	}
+
+	.arrow-animation {
+		position: absolute;
+		top: 50%;
+		left: 0;
+		transform: translate(0, -50%);
+		animation-name: arrow;
+		animation-duration: 5s;
+		animation-iteration-count: infinite;
+		border-bottom: 3px solid rgb(84, 110, 122);
+	}
+}
