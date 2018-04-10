@@ -5,6 +5,12 @@ import { push } from 'react-router-redux'
 // import {withRouter} from 'react-router-dom';
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
+import ArrowBack from 'material-ui/svg-icons/navigation/arrow-back'
+import ArrowDown from 'material-ui/svg-icons/navigation/arrow-downward'
+import ArrowForward from 'material-ui/svg-icons/navigation/arrow-forward'
+import ArrowUp from 'material-ui/svg-icons/navigation/arrow-upward'
+import {blueGrey800, blueGrey600, blueGrey300} from 'material-ui/styles/colors'
+
 import GameDialog from '../GameDialog'
 import OrientationDialog from '../OrientationDialog'
 import * as d3 from 'd3';
@@ -45,20 +51,18 @@ export default class ConfigureBoard extends Component {
 			push('/start')
 		}
 		const bodyElement = d3.select("body")
-	    .on("touchstart", this.nozoom)
-	    .on("touchmove", this.nozoom)
+			.on("touchstart", this.nozoom)
+			.on("touchmove", this.nozoom)
 
-	  const width = document.body.offsetWidth
-	  const height = document.body.offsetHeight
-	  console.log("width: ", width, ", height: ", height)
+		const width = document.body.offsetWidth
+		const height = document.body.offsetHeight
+		console.log("width: ", width, ", height: ", height)
 
 		const svg = d3.select('.board-svg')
 			.attr("width", width)
 			.attr("height", height)
-			// .on("touchstart", this.touchHandler)
-    	.on("touchmove", ::this.touchHandler)
-    	// .on("mousedown", this.mouseHandler)
-    	.on("mousemove", ::this.mouseHandler);
+			.on("touchmove", ::this.touchHandler)
+			.on("mousemove", ::this.mouseHandler);
 
 		this.debouncedUpdate = _.debounce(::this.updateBoardConfiguration, 200, false)
 
@@ -85,51 +89,51 @@ export default class ConfigureBoard extends Component {
 
 	touchHandler() {
 		d3.event.preventDefault();
-    d3.event.stopPropagation();
-    const svg = d3.select(".board-svg")
-    const d = d3.touches(svg.node());
+		d3.event.stopPropagation();
+		const svg = d3.select(".board-svg")
+		const d = d3.touches(svg.node());
 		const stateTouches = this.state.touches
-    console.log("touch d: ", d)
+		console.log("touch d: ", d)
 
 
-    const touches = stateTouches && stateTouches.length > 0
-    	? stateTouches.map((finger, index) => {
-		    	return [
-		    		...finger,
-		    		d[index]
-		    	]
-		    })
-    	: [d]
+		const touches = stateTouches && stateTouches.length > 0
+			? stateTouches.map((finger, index) => {
+					return [
+						...finger,
+						d[index]
+					]
+				})
+			: [d]
 
-    this.setState({
-    	touches
-    }, () => {
-    	this.updateFingerTrace()
-    	this.debouncedUpdate()
-    })
+		this.setState({
+			touches
+		}, () => {
+			this.updateFingerTrace()
+			this.debouncedUpdate()
+		})
 	}
 
 	mouseHandler() {
 		d3.event.preventDefault();
-    d3.event.stopPropagation();
-    const svg = d3.select(".board-svg")
-    const d = d3.mouse(svg.node());
-    const stateTouches = this.state.touches
-    const touches = stateTouches && stateTouches.length > 0
-    	? stateTouches.map((finger, index) => {
-		    	return [
-		    		...finger,
-		    		d //assuming only one mouse
-		    	]
-		    })
-    	: [[d]]
+		d3.event.stopPropagation();
+		const svg = d3.select(".board-svg")
+		const d = d3.mouse(svg.node());
+		const stateTouches = this.state.touches
+		const touches = stateTouches && stateTouches.length > 0
+			? stateTouches.map((finger, index) => {
+					return [
+						...finger,
+						d //assuming only one mouse
+					]
+				})
+			: [[d]]
 
-    this.setState({
-    	touches
-    }, () => {
-    	this.updateFingerTrace()
-    	this.debouncedUpdate()
-    })
+		this.setState({
+			touches
+		}, () => {
+			this.updateFingerTrace()
+			this.debouncedUpdate()
+		})
 	}
 
 	nozoom (){
@@ -138,11 +142,11 @@ export default class ConfigureBoard extends Component {
 
 	updateFingerTrace() {
 		const line = d3.line()
-		  .x(d => {
-		  	return d[0]
-		  })
-		  .y(d => d[1])
-		  .curve(d3.curveBasis)
+			.x(d => {
+				return d[0]
+			})
+			.y(d => d[1])
+			.curve(d3.curveBasis)
 
 
 		const traces = d3.select('.board-svg').selectAll('.finger-trace')
@@ -210,12 +214,22 @@ export default class ConfigureBoard extends Component {
 			: Math.abs(touchPoints[0][1] - touchPoints[1][1])
 	}
 
-  render() {
-    return (
-      <div className="configure-board-container">
-        <svg className="board-svg"/>
-        <OrientationDialog/>
-      </div>
-    );
-  }
+	render() {
+		return (
+			<div className="configure-board-container">
+				<svg className="board-svg"/>
+				<OrientationDialog/>
+				<div className="instructions-overlay">
+					<div className="instructions-text">
+						Drag a finger down the board
+					</div>
+					<ArrowUp className='arrow-up' color={blueGrey300}/>
+					<ArrowForward className='arrow-forward' color={blueGrey300}/>
+					<ArrowDown className='arrow-downward' color={blueGrey300}/>
+					<ArrowBack className="arrow-back" color={blueGrey300}/>
+
+				</div>
+			</div>
+		);
+	}
 }

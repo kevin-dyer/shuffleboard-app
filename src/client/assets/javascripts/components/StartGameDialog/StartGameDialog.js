@@ -72,7 +72,7 @@ export default class StartGameDialog extends Component {
         		e.stopPropagation();
         	}} className="join-game-container">
         		<TextField
-        			floatingLabelText="Or Join a Game"
+        			floatingLabelText="Or Join with PIN"
         			hintText="Enter PIN"
         			onChange={::this.handleInputChange}
         		/>
