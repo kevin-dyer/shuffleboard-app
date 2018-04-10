@@ -7,7 +7,11 @@ import {
 	startPollingPucks,
 	mouseDown,
 	mouseUp,
-	ACCEPT_MODAL
+	ACCEPT_MODAL,
+	PLAY_AGAIN,
+	EXIT_GAME,
+	exitGame,
+	playAgain
 } from 'app/actions/shuffleboard-actions'
 import moment from 'moment'
 
@@ -152,6 +156,14 @@ export const init = (store) => {
 		//Question: when user rejoins - will they enter with a different action type?
 		store.dispatch({type: USER_LEFT, ...payload})
 	})
+
+	socket.on(PLAY_AGAIN, payload => {
+		store.dispatch(playAgain())
+	})
+
+	socket.on(EXIT_GAME, payload => {
+		store.dispatch(exitGame())
+	})
 }
 
 
@@ -240,5 +252,12 @@ export function broadcastDoneWaiting(roomPin) {
 	emit(DONE_WAITING)
 }
 
+export function broadcastPlayAgain() {
+	emit(PLAY_AGAIN)
+}
+
+export function broadcastExitGame() {
+	emit(EXIT_GAME)
+}
 
 

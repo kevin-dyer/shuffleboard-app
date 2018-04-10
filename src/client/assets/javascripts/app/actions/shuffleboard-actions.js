@@ -1,9 +1,10 @@
+import { push } from 'react-router-redux'
 import {
 	Engine,
 	Render,
 	Runner,
-	Composites,
-	Common,
+	// Composites,
+	Composite,
 	MouseConstraint,
 	Mouse,
 	World,
@@ -16,7 +17,9 @@ import {
 	// broadcastTurnStarted
 	broadcastMouseDown,
 	broadcastMouseUp,
-	broadcastAcceptModal
+	broadcastAcceptModal,
+	broadcastPlayAgain,
+	broadcastExitGame
 } from 'app/actions/socket-actions'
 require('images/wood_grain3.jpg')
 require('images/wood_grain3_side.jpg')
@@ -37,6 +40,10 @@ export const ACCEPT_MODAL = 'ACCEPT_MODAL'
 export const SHOW_NEXT_TURN_MODAL = 'SHOW_NEXT_TURN_MODAL'
 export const SHOW_ORIENTATION_MODAL = 'SHOW_ORIENTATION_MODAL'
 // export const SHOW_ALLOW_JOIN_MODAL = 'SHOW_ALLOW_JOIN_MODAL'
+export const PLAY_AGAIN = 'PLAY_AGAIN'
+export const CLEAR_PUCKS = 'CLEAR_PUCKS'
+export const CLEAR_DEVICES = 'CLEAR_DEVICES'
+export const EXIT_GAME = 'EXIT_GAME'
 
 export const TEAM_TYPES = {
 	RED: 'RED',
@@ -1101,6 +1108,42 @@ export function acceptModal() {
 
 	return {
 		type: ACCEPT_MODAL
+	}
+}
+
+export function playAgain() {
+	return dispatch => {
+		console.log("playAgain called")
+		dispatch(clearPucks())
+		dispatch(showStartGameModal())
+	}
+}
+
+export function clearPucks() {
+	return dispatch => {
+		dispatch({
+			type: CLEAR_PUCKS
+		})
+
+		Composite.remove(world, puckElements)
+		puckElements = []
+
+	}
+	//remove puck bodies
+	console.log("clearPucks called")
+	
+}
+
+export function clearDevices() {
+	return {type: CLEAR_DEVICES}
+}
+
+export function exitGame() {
+	return dispatch => {
+		dispatch(clearPucks())
+		dispatch(clearDevices())
+		// broadcastExitGame()
+		dispatch(push('/start'))
 	}
 }
 

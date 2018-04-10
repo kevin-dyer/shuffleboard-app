@@ -18,7 +18,10 @@ import {
   SHOW_ORIENTATION_MODAL,
   SHOW_ALLOW_JOIN_MODAL,
   TEAM_TYPES,
-  START_GAME
+  START_GAME,
+  PLAY_AGAIN,
+  CLEAR_DEVICES,
+  CLEAR_PUCKS
 } from 'app/actions/shuffleboard-actions'
 
 import _ from 'underscore'
@@ -201,6 +204,18 @@ export function boardConfig(state = initialState, action = {}) {
           ...state.dialog,
           accepted: true
         }
+      }
+
+    case CLEAR_PUCKS:
+      return {
+        ...state,
+        pucks: []
+      }
+
+    case CLEAR_DEVICES:
+      return {
+        ...state,
+        devices: {}
       }
 
     default:

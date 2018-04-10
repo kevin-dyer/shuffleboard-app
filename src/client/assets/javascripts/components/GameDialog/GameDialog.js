@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
-// import { Link, withRouter } from 'react-router';
+import { push } from 'react-router-redux'
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
 import Dialog from 'material-ui/Dialog'
@@ -22,10 +22,14 @@ import {
 	acceptModal,
 	getGameState,
 	showStartGameModal,
-	showGameOverModal
+	showGameOverModal,
+	playAgain,
+	exitGame
 } from 'app/actions/shuffleboard-actions'
 import {
-	broadcastPucks
+	broadcastPucks,
+	broadcastExitGame,
+	broadcastPlayAgain
 } from 'app/actions/socket-actions'
 import {
 	Engine,
@@ -54,7 +58,10 @@ const stateToProps = ({boardConfig}) => ({
 	showStartGameModal,
 	showGameOverModal,
 
-	startTurn
+	startTurn,
+	playAgain,
+	exitGame,
+	push
 })
 // @withRouter
 export default class GameDialog extends Component {
@@ -84,10 +91,69 @@ export default class GameDialog extends Component {
 		if (gameState.isGameOver) {
 			// End Game
 			console.log("game has ended. TODO: reset board")
+
 		} else if (devices && Object.keys(devices).length > 0) {
 			console.log("calling startTurn from GameDialog handleAccept")
 			startTurn()
 		}
+	}
+
+	handlePlayAgain() {
+		const {
+			playAgain
+		} = this.props
+
+		broadcastPlayAgain()
+		playAgain()
+	}
+
+	handleExitGame() {
+		const {push, exitGame} = this.props
+
+		broadcastExitGame()
+		exitGame()
+	}
+
+	renderActionBtns() {
+		const {
+			// boardConfig: {
+			// 	devices = {},
+			// 	socketId,
+			// 	dialog: {
+			// 		title,
+			// 		body,
+			// 		accepted
+			// 	}
+			// },
+			acceptModal,
+			getGameState
+		} = this.props
+		const gameState = getGameState()
+
+		console.log("gameState isGameOver: ", gameState.isGameOver)
+		return gameState.isGameOver
+			? [
+					<FlatButton
+		        label="Play Again"
+		        primary={true}
+		        keyboardFocused={true}
+		        onTouchTap={::this.handlePlayAgain}
+		      />,
+		      <FlatButton
+		        label="Exit"
+		        primary={true}
+		        keyboardFocused={false}
+		        onTouchTap={::this.handleExitGame}
+		      />
+				]
+			: [
+					<FlatButton
+		        label="Ok"
+		        primary={true}
+		        keyboardFocused={true}
+		        onTouchTap={acceptModal}
+		      />
+				]
 	}
 
 	render() {
@@ -104,6 +170,7 @@ export default class GameDialog extends Component {
 			acceptModal
 		} = this.props
 		const device = devices[socketId] || {directionY: true, inverted: true}
+		const actionBtns = ::this.renderActionBtns()
 
 		//TODO: need to decide when to show/hide this modal based on state
 			// can fire generic action for each button
@@ -112,14 +179,7 @@ export default class GameDialog extends Component {
 		return (
 			<Dialog
         title={title}
-        actions={[
-		      <FlatButton
-		        label="Ok"
-		        primary={true}
-		        keyboardFocused={true}
-		        onTouchTap={acceptModal}
-		      />,
-		    ]}
+        actions={actionBtns}
         open={!accepted}
         onRequestClose={()=>{}}
         contentStyle={{

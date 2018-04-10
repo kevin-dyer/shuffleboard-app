@@ -81,7 +81,7 @@ export default class JoinGameDialog extends Component {
 					</div>
 
 					<RaisedButton
-						label="Configure Board"
+						label="Continue"
 						onTouchTap={::this.handleStartGame}
 						primary={true}
 					/>
