@@ -17,8 +17,8 @@ import './OrientationDialog.scss'
 const iconColor = blueGrey600
 const iconColor2 = blueGrey300
 const iconStyle = {
-	height: 40,
-	width: 40,
+	height: 50,
+	width: 50,
 	margin: '0'
 }
 
