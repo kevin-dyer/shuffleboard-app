@@ -45,48 +45,56 @@ export default class OrientationDialog extends Component {
 
 		return (
 			<Dialog
-        title='Orient the Board'
-        open={!accepted}
-        onRequestClose={()=>{}}
-      >
-        <div>
-        	<div className="instructions">
-        		<p>
-        			Place devices flat on a table in a straight line to create your shuffleboard.
-        		</p>
-        		<p>
-        			Then drag a finger from the start of the board to the end to configure it.
-        		</p>
-        	</div>
+				title='Orient the Board'
+				open={!accepted}
+				onRequestClose={()=>{}}
+				actions={[
+					<RaisedButton
+						label="Configure Board"
+						onTouchTap={acceptModal}
+						primary={true}
+					/>
+				]}
+				titleStyle={{textAlign: 'center'}}
+				actionsContainerStyle={{
+					display: "flex",
+					alignItems: 'center',
+					justifyContent: 'center'
+				}}
+			>
+				<div>
+					<div className="instructions">
+						<p>
+							Place devices flat on a table in a straight line to create your shuffleboard.
+						</p>
+						<p>
+							Then drag a finger from the start of the board to the end to configure it.
+						</p>
+					</div>
 
-        	<div className="orientation-container">
-        		<div className="inner-container">
-	        		<div className="clients-container">
-	        			{clients.map(client =>
-	        				<PhoneIcon key={client} color={iconColor2} style={{
-	        					...iconStyle,
-	        					transform: 'rotate(90deg)'
-	        				}}/>
-	        			)}
-	        		</div>
+					<div className="orientation-container">
+						<div className="inner-container">
+							<div className="clients-container">
+								{clients.map(client =>
+									<PhoneIcon key={client} color={iconColor2} style={{
+										...iconStyle,
+										transform: 'rotate(90deg)'
+									}}/>
+								)}
+							</div>
 
-	        		<div className="touch-animation">
-		        		<TouchIcon
-		        			className="touch-icon"
-		        			color={iconColor}
-		        			style={iconStyle}
-		        		/>
-		        	</div>
-		        	<div className="arrow-animation"/>
-		        </div>
-        	</div>
-        	<RaisedButton
-        		label="Configure Board"
-        		onTouchTap={acceptModal}
-        		primary={true}
-        	/>
-        </div>
-      </Dialog>
+							<div className="touch-animation">
+								<TouchIcon
+									className="touch-icon"
+									color={iconColor}
+									style={iconStyle}
+								/>
+							</div>
+							<div className="arrow-animation"/>
+						</div>
+					</div>
+				</div>
+			</Dialog>
 		);
 	}
 }

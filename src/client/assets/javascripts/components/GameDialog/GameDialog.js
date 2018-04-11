@@ -7,10 +7,7 @@ import Dialog from 'material-ui/Dialog'
 import FlatButton from 'material-ui/FlatButton';
 import RaisedButton from 'material-ui/RaisedButton';
 
-// import './GameDialog.scss';
 import {
-	// setBoardDimensions,
-	// updatePucks,
 	startTurn,
 	getBoardLength,
 	getBoardWidth,
@@ -18,11 +15,8 @@ import {
 	generatePuckMessage,
 	isBoardActive,
 	TEAM_TYPES,
-	// cancelModal,
 	acceptModal,
 	getGameState,
-	showStartGameModal,
-	showGameOverModal,
 	playAgain,
 	exitGame
 } from 'app/actions/shuffleboard-actions'
@@ -45,6 +39,8 @@ import {
 	Events
 } from 'matter-js'
 
+import './GameDialog.scss';
+
 
 const stateToProps = ({boardConfig}) => ({
 	boardConfig
@@ -54,10 +50,6 @@ const stateToProps = ({boardConfig}) => ({
 	// cancelModal,
 	acceptModal,
 	getGameState,
-	//TODO: fire these on component did update
-	showStartGameModal,
-	showGameOverModal,
-
 	startTurn,
 	playAgain,
 	exitGame,
@@ -114,7 +106,7 @@ export default class GameDialog extends Component {
 		exitGame()
 	}
 
-	renderActionBtns() {
+	renderActionBtns(gameState={}) {
 		const {
 			// boardConfig: {
 			// 	devices = {},
@@ -128,35 +120,34 @@ export default class GameDialog extends Component {
 			acceptModal,
 			getGameState
 		} = this.props
-		const gameState = getGameState()
 
 		console.log("gameState isGameOver: ", gameState.isGameOver)
 		return gameState.isGameOver
 			? [
 					<FlatButton
-		        label="Play Again"
-		        primary={true}
-		        keyboardFocused={true}
-		        onTouchTap={::this.handlePlayAgain}
-		      />,
-		      <FlatButton
-		        label="Exit"
-		        primary={true}
-		        keyboardFocused={false}
-		        onTouchTap={::this.handleExitGame}
-		      />
+						label="Play Again"
+						primary={true}
+						keyboardFocused={true}
+						onTouchTap={::this.handlePlayAgain}
+					/>,
+					<FlatButton
+						label="Exit"
+						primary={true}
+						keyboardFocused={false}
+						onTouchTap={::this.handleExitGame}
+					/>
 				]
 			: [
 					<FlatButton
-		        label="Ok"
-		        primary={true}
-		        keyboardFocused={true}
-		        onTouchTap={acceptModal}
-		      />
+						label="Ok"
+						primary={true}
+						keyboardFocused={true}
+						onTouchTap={acceptModal}
+					/>
 				]
 	}
 
-	render() {
+	renderScore(gameState={}) {
 		const {
 			boardConfig: {
 				devices = {},
@@ -169,8 +160,58 @@ export default class GameDialog extends Component {
 			},
 			acceptModal
 		} = this.props
+		const {
+			score={},
+			isRedsTurn=true,
+			isGameOver=false
+		} = gameState
+
+		return (
+			<div className="score-container">
+				{/*<div className="score-title">
+					Score
+				</div>*/}
+				<div className="score-content">
+					<div className="score-box red-score">
+						<div className="score-number red-score-number">
+							{score.red || 0}
+						</div>
+						<div className="score-label red-score-label">
+							Red
+						</div>
+					</div>
+					<div className="score-box blue-score">
+						<div className="score-number blue-score-number">
+							{score.blue || 0}
+						</div>
+						<div className="score-label blue-score-label">
+							Blue
+						</div>
+					</div>
+				</div>
+			</div>
+		)
+	}
+
+	render() {
+		const {
+			boardConfig: {
+				devices = {},
+				socketId,
+				dialog: {
+					title,
+					body,
+					accepted
+				},
+				pucks
+			},
+			acceptModal,
+			getGameState
+		} = this.props
 		const device = devices[socketId] || {directionY: true, inverted: true}
-		const actionBtns = ::this.renderActionBtns()
+		const gameState = getGameState()
+		const actionBtns = ::this.renderActionBtns(gameState)
+		const scoreContent = ::this.renderScore(gameState)
 
 		//TODO: need to decide when to show/hide this modal based on state
 			// can fire generic action for each button
@@ -178,25 +219,46 @@ export default class GameDialog extends Component {
 		//How to decide which actions to bind to the action buttons
 		return (
 			<Dialog
-        title={title}
-        actions={actionBtns}
-        open={!accepted}
-        onRequestClose={()=>{}}
-        contentStyle={{
-        	transform: `rotate(${!device.directionY
-        		? device.inverted
-        			? 270
-        			: 90
-        		: device.inverted
-        			? 0
-        			: 180
-        	}deg)`,
-        	maxWidth: 350,
-        	maxHeight: 400
-        }}
-      >
-        {body}
-      </Dialog>
+				title={title}
+				actions={actionBtns}
+				open={!accepted}
+				onRequestClose={()=>{}}
+				contentStyle={{
+					transform: `rotate(${!device.directionY
+						? device.inverted
+							? 270
+							: 90
+						: device.inverted
+							? 0
+							: 180
+					}deg)`,
+					maxWidth: 350,
+					maxHeight: 400
+				}}
+				titleStyle={{
+					textAlign: 'center',
+					textTransform: 'capitalize'
+				}}
+				actionsContainerStyle={{
+					display: "flex",
+					alignItems: 'center',
+					justifyContent: 'center'
+				}}
+			>
+				{gameState.isGameOver &&
+					<div className="winning-team">
+						{gameState.score.red > gameState.score.blue ? 'Red' : 'Blue'} team Won!
+					</div>
+				}
+				{pucks && pucks.length
+					? scoreContent
+					: (
+							<div className="red-starts">
+								Red team will start
+							</div>
+						)
+				}
+			</Dialog>
 		);
 	}
 }

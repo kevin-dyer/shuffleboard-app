@@ -1,0 +1,31 @@
+
+.red-starts {
+	text-align: center;
+}
+
+.winning-team {
+	text-align: center;
+}
+
+.score-container {
+	.score-title {
+		font-size: 12px;
+	}
+	.score-content {
+		display: flex;
+		justify-content: space-around;
+	}
+
+	.score-box {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.score-number {
+		font-size: 50px;
+	}
+
+	.score-label {
+		font-size: 16px;
+	}
+}

@@ -63,13 +63,26 @@ export default class JoinGameDialog extends Component {
 
 		return (
 			<Dialog
-				title={`Game PIN: ${roomPin}`}
+				title='Wait for everyone to Join'
 				open={true}
 				onRequestClose={()=>{}}
+				actions={[
+					<RaisedButton
+						label="Continue"
+						onTouchTap={::this.handleStartGame}
+						primary={true}
+					/>
+				]}
+				titleStyle={{textAlign: 'center'}}
+				actionsContainerStyle={{
+					display: "flex",
+					alignItems: 'center',
+					justifyContent: 'center'
+				}}
 			>
 				<div>
-					<div className="instructions">
-						Continue once all clients have joined.
+					<div className="game-pin">
+						PIN: {roomPin}
 					</div>
 
 					<div className="clients">
@@ -79,12 +92,6 @@ export default class JoinGameDialog extends Component {
 							)}
 						</div>
 					</div>
-
-					<RaisedButton
-						label="Continue"
-						onTouchTap={::this.handleStartGame}
-						primary={true}
-					/>
 				</div>
 			</Dialog>
 		);

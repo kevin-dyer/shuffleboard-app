@@ -7,9 +7,15 @@
 	to {width: 100%;}
 }
 
+.instructions {
+	p {
+		margin-bottom: 5px;
+	}
+}
 .orientation-container {
 	display: flex;
 	justify-content: center;
+	margin: -20px 0;
 
 	.inner-container {
 		position: relative;

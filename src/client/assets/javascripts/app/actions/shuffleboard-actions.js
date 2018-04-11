@@ -1048,10 +1048,10 @@ export function getGameState() {
 			}
 		})
 
+		//TODO: consider adding turnNumber
 		return {
 			score: getScoreFromPucks(puckElements, devices, socketId), //{red: 4, blue: 1}
 			isRedsTurn: redPuckCount <= bluePuckCount,
-			isTurnInProgress: isBoardActive(puckElements), //This is not completely accurate b/c pucks are not moving at beginning of turn
 			isGameOver: redPuckCount + bluePuckCount === 8
 		}
 	}
@@ -1068,10 +1068,14 @@ export function showStartGameModal() {
 }
 
 export function showNextTurnModal({score, isRedsTurn}) {
+	console.log("puckElements.length: ", puckElements.length)
 	return {
 		type: SHOW_NEXT_TURN_MODAL,
 		score,
-		isRedsTurn
+		isRedsTurn,
+		turnNumber: puckElements.length % 2
+			? (puckElements.length + 1) / 2
+			: puckElements.length / 2 + 1
 	}
 }
 

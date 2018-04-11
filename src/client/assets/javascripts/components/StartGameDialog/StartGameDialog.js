@@ -55,36 +55,42 @@ export default class StartGameDialog extends Component {
 		// console.log("StartGameDialog pin state: ", pin)
 		return (
 			<Dialog
-        title='Play Shuffleboard!'
-        open={true}
-        onRequestClose={()=>{}}
-      >
-        <div>
-        	<RaisedButton
-        		label="Start a New Game"
-        		onTouchTap={startGame}
-        		primary={!pin}
-        	/>
+				title='Play Shuffleboard!'
+				open={true}
+				onRequestClose={()=>{}}
+				titleStyle={{textAlign: 'center'}}
+			>
+				<div style={{
+					display: "flex",
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center'
+				}}>
+					<RaisedButton
+						label="Start a New Game"
+						onTouchTap={startGame}
+						primary={!pin}
+					/>
 
-        	<form onSubmit={e => {
-        		joinGame(pin);
-        		e.preventDefault();
-        		e.stopPropagation();
-        	}} className="join-game-container">
-        		<TextField
-        			floatingLabelText="Or Join with PIN"
-        			hintText="Enter PIN"
-        			onChange={::this.handleInputChange}
-        		/>
-        		<FlatButton
-        			label="Join"
-        			disabled={!this.isPinValid(pin)}
-        			type="submit"
-        			primary={!!pin}
-        		/>
-        	</form>
-        </div>
-      </Dialog>
+					<form onSubmit={e => {
+						joinGame(pin);
+						e.preventDefault();
+						e.stopPropagation();
+					}} className="join-game-container">
+						<TextField
+							floatingLabelText="Or Join with PIN"
+							hintText="Enter PIN"
+							onChange={::this.handleInputChange}
+						/>
+						<FlatButton
+							label="Join"
+							disabled={!this.isPinValid(pin)}
+							type="submit"
+							primary={!!pin}
+						/>
+					</form>
+				</div>
+			</Dialog>
 		);
 	}
 }

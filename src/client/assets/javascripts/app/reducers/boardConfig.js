@@ -152,7 +152,7 @@ export function boardConfig(state = initialState, action = {}) {
         dialog: {
           ...state.dialog,
           accepted: false,
-          title: `${action.isRedsTurn ? TEAM_TYPES.RED : TEAM_TYPES.BLUE} team's turn!`,
+          title: `${(action.isRedsTurn ? TEAM_TYPES.RED : TEAM_TYPES.BLUE).toLowerCase()}'s turn (${action.turnNumber}/4)`,
           body: `Red: ${action.score.red}, Blue: ${action.score.blue}`
         }
       }
@@ -163,7 +163,7 @@ export function boardConfig(state = initialState, action = {}) {
         dialog: {
           ...state.dialog,
           accepted: false,
-          title: `${action.score.red > action.score.blue ? TEAM_TYPES.RED : TEAM_TYPES.BLUE} team won!`,
+          title: 'Game Over',
           body: `Red: ${action.score.red}, Blue: ${action.score.blue}`
         }
       }
