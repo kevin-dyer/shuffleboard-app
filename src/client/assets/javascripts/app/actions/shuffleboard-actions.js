@@ -252,7 +252,7 @@ function createScoreBoxes({device, boardWidth, boardLength}) {
 			mask: 'none'
 		},
 		render: {
-			strokeStyle: 'rgba(0,0,200,0.2)',
+			strokeStyle: 'rgba(0,0,0,0.2)',
 			fillStyle: 'rgba(0,0,0,0)',
 			lineWidth: 5
 		}

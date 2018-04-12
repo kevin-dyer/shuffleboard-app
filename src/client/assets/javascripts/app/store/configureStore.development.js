@@ -3,7 +3,7 @@ import { persistState } from 'redux-devtools';
 import promiseMiddleware from 'redux-promise';
 import createLogger from 'redux-logger';
 import thunk from 'redux-thunk';
-import { routerMiddleware } from 'react-router-redux'
+import { routerMiddleware } from 'react-router-redux';
 import { browserHistory } from 'react-router';
 
 
