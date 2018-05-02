@@ -121,7 +121,6 @@ export default class GameDialog extends Component {
 			getGameState
 		} = this.props
 
-		console.log("gameState isGameOver: ", gameState.isGameOver)
 		return gameState.isGameOver
 			? [
 					<FlatButton
@@ -223,6 +222,7 @@ export default class GameDialog extends Component {
 				actions={actionBtns}
 				open={!accepted}
 				onRequestClose={()=>{}}
+				autoScrollBodyContent={true}
 				contentStyle={{
 					transform: `rotate(${!device.directionY
 						? device.inverted

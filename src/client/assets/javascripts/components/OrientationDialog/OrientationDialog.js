@@ -55,6 +55,7 @@ export default class OrientationDialog extends Component {
 						primary={true}
 					/>
 				]}
+				autoScrollBodyContent={true}
 				titleStyle={{textAlign: 'center'}}
 				actionsContainerStyle={{
 					display: "flex",
@@ -63,15 +64,6 @@ export default class OrientationDialog extends Component {
 				}}
 			>
 				<div>
-					<div className="instructions">
-						<p>
-							Place devices flat on a table in a straight line to create your shuffleboard.
-						</p>
-						<p>
-							Then drag a finger from the start of the board to the end to configure it.
-						</p>
-					</div>
-
 					<div className="orientation-container">
 						<div className="inner-container">
 							<div className="clients-container">
@@ -92,6 +84,15 @@ export default class OrientationDialog extends Component {
 							</div>
 							<div className="arrow-animation"/>
 						</div>
+					</div>
+
+					<div className="instructions">
+						<p>
+							Place devices in a straight line to create your shuffleboard.
+						</p>
+						<p>
+							Then drag a finger from the start of the board to the end to configure it.
+						</p>
 					</div>
 				</div>
 			</Dialog>

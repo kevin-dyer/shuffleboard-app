@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import {connect} from 'react-redux';
-// import { Link, withRouter } from 'react-router';
 import { push } from 'react-router-redux'
 import IconButton from 'material-ui/IconButton'
 import FullScrIcon from 'material-ui/svg-icons/image/crop-free'
@@ -29,7 +28,6 @@ const stateToProps = ({boardConfig}) => ({
 	boardConfig
 })
 
-
 @connect(stateToProps, {
 	startTurn,
 	showStartGameModal,
@@ -55,8 +53,6 @@ export default class Shuffleboard extends Component {
 		const device = devices[socketId]
 		const shuffleboardCanvas = document.getElementById('shuffleboard-canvas')
 
-
-		// console.log("boardWidth: ", boardWidth)
 		//move into component will receive props
 		console.log("Shuffleboard roomId: ", roomId)
 		if (!roomId) {
@@ -68,6 +64,7 @@ export default class Shuffleboard extends Component {
 		showStartGameModal()
 	}
 
+	//QUESTION: is this still useful?
 	componentDidUpdate({boardConfig: {clients: prevClients=[]}}) {
 		const {
 			boardConfig: {
@@ -80,74 +77,35 @@ export default class Shuffleboard extends Component {
 		}
 	}
 
-
-	accpetModalHandler() {
-		// const {} = this.props
-		//TODO: call acceptModal action
-	}
-
 	render() {
 		const {
 			boardConfig: {
 				devices = {},
-				socketId
+				socketId,
+				broadcastLatency,
+				broadcastDevice
 			},
 			router
 		} = this.props
 		const device = devices[socketId] || {}
-
-		// //Print the board orders and in what order you are in
-		// const sortedDevices = Object.values(devices).sort((devA, devB) => {
-		// 	return devA.timestamp > devB.timestamp
-		// })
+		//steps of 10
+		const formattedLatency = Math.floor(broadcastLatency / 10) * 10
 
 		return (
-			<div className={`shuffleboard-container ${device.directionY ? '' : ' sideways'}`} id="shuffleboard-container">
+			<div
+				className={`shuffleboard-container ${device.directionY ? '' : ' sideways'}`}
+				id="shuffleboard-container"
+			>
 				<div id="shuffleboard-canvas">
 				</div>
-
-				{/*<div className="menu">
-					<IconButton
-						onTouchTap={e => {
-							console.log("onClick called! e: ", e)
-							toggleFullScreen()
-						}}
-						style={{cursor:'pointer'}}
-					>
-						<FullScrIcon color="#FFF"/>
-					</IconButton>
-				</div>*/}
-
-				{/*<div id="board-cover" style={{
-					width: '100%',
-					height: '100%',
-					backgroundColor: 'red',
-					opacity: 0.2,
-					zIndex: 0,
-					position: 'absolute',
-					top: 0,
-					left: 0,
-					pointerEvents: 'none'
-				}}/>*/}
+				{broadcastDevice === device &&
+					<div className="board-stats">
+						<div>Latency: {formattedLatency}ms</div>
+					</div>
+				}
 
 				<GameDialog/>
 			</div>
 		);
 	}
 }
-
-// function toggleFullScreen() {
-// 	var doc = window.document;
-// 	// var docEl = doc.documentElement;
-// 	const docEl = document.getElementById('shuffleboard-canvas')
-
-// 	var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-// 	var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
-// 	if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-// 		requestFullScreen.call(docEl);
-// 	}
-// 	else {
-// 		cancelFullScreen.call(doc);
-// 	}
-// }

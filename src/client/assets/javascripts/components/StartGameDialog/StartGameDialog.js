@@ -58,6 +58,7 @@ export default class StartGameDialog extends Component {
 				title='Play Shuffleboard!'
 				open={true}
 				onRequestClose={()=>{}}
+				autoScrollBodyContent={true}
 				titleStyle={{textAlign: 'center'}}
 			>
 				<div style={{
@@ -70,6 +71,9 @@ export default class StartGameDialog extends Component {
 						label="Start a New Game"
 						onTouchTap={startGame}
 						primary={!pin}
+						style={{
+							marginTop: 10
+						}}
 					/>
 
 					<form onSubmit={e => {

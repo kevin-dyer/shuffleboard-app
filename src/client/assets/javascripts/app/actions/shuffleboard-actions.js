@@ -19,7 +19,9 @@ import {
 	broadcastMouseUp,
 	broadcastAcceptModal,
 	broadcastPlayAgain,
-	broadcastExitGame
+	broadcastExitGame,
+	broadcastStopTurn,
+	exitSocket
 } from 'app/actions/socket-actions'
 require('images/wood_grain3.jpg')
 require('images/wood_grain3_side.jpg')
@@ -44,6 +46,9 @@ export const PLAY_AGAIN = 'PLAY_AGAIN'
 export const CLEAR_PUCKS = 'CLEAR_PUCKS'
 export const CLEAR_DEVICES = 'CLEAR_DEVICES'
 export const EXIT_GAME = 'EXIT_GAME'
+export const USER_LEFT = 'USER_LEFT'
+export const SET_BROADCAST_DEVICE = 'SET_BROADCAST_DEVICE'
+export const SET_BROADCAST_TIMESTAMP = 'SET_BROADCAST_TIMESTAMP'
 
 export const TEAM_TYPES = {
 	RED: 'RED',
@@ -63,7 +68,7 @@ const wallHeight = 40
 const scoreBoxHeight = 100
 const puckRad = 35
 let isMouseDown = false
-const pollInterval = 50
+const pollInterval = 200 //was 50
 let lastBroadcaster
 let mouseDownSound
 let throwSound
@@ -630,96 +635,148 @@ export function startTurn () {
 	}
 }
 
+//TODO: for testing only
+let broadcastStartTime
+
 //TODO: call this on action fired from mouse down
 // on mouse down, should broadcast message
 	// this message should cause all devices to fire startPollingPucks
 export function startPollingPucks () {
 	return (dispatch, getState) => {
-		const {boardConfig: {socketId, devices}} = getState()
+		const {
+			boardConfig: {
+				socketId,
+				devices,
+				broadcastTimestamp = 0
+			}
+		} = getState()
 		const device = devices[socketId]
 
 		stopPollingPucks()
 
-		broadcastPoll = setInterval(() => {
-			// TODO: should check if puck is in bounds
+		//TODO: reconfigure this so that the step function runs in step with device and internet latency
+		// should call step function on response from server
+		// need to time how long that takes and see if it is slower or faster than 50ms
+		broadcastPoll = setInterval(
+			turnStep.bind(
+				null,
+				device,
+				devices,
+				socketId,
+				// broadcastTimestamp,
+				dispatch,
+				getState
+			),
+			pollInterval
+		)
+	}
+}
 
-			//check if balls are moving, if not and mouse is not down, clear interval and complete turn
+function turnStep(device, devices, socketId, dispatch, getState) {
+	//Note: Only broadcast here if current puck is diplayed on current device
+	const {boardConfig: {broadcastTimestamp=0}} = getState()
+
+	if (puckElements && puckElements.length > 0) {
+		const currentPuck = puckElements[puckElements.length - 1]
+		//check if location of puck is inside device
+		const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
+
+		//set in state
+		dispatch(setBroadcastDevice(broadcastDevice))
+
+		if (broadcastDevice === device) {
+			const sinceReceived = Date.now() - broadcastTimestamp
+			// console.log("sinceReceived: ", sinceReceived)
+			//TODO: Need to consider the time since last broadcast puck was received
+			if (sinceReceived > 400) {
+				const nextPucks = generatePuckMessage(puckElements, device)
+
+				broadcastPucks(nextPucks, device, devices)
+			}
+			// console.log("this is broadcastDevice")
+
+
+			//TODO: for test - update style when is broadcastDevice
+			// canvasElement.style.border = '2px solid red'
+
+			//TODO: move into socket actions on PUCK_BROADCAST_COMPLETE response - use to decide whether to call turnStep again
+			//BIG TODO: modify so that only the broadcaster can stop the turn
 			const boardIsActive = isBoardActive(puckElements)
-
 			if (!boardIsActive && !isMouseDown) {
-				stopPollingPucks()
-				updatePuckCollisions(device, devices)
-
-				const gameState = dispatch(getGameState())
-
-				// console.log("gameState: ", gameState)
-
-				//TODO: broadcast turn complete
-				if (!gameState.isGameOver) {
-					dispatch(showNextTurnModal(gameState))
-				} else {
-					dispatch(showGameOverModal(gameState))
-				}
-
-				//TODO: stop the throw sound
-				throwSound.stop()
-				// stopSoundListeners()
-				return
+				broadcastStopTurn()
+				dispatch(stopTurn())
 			}
 
-			//Note: Only broadcast here if current puck is diplayed on current device
-			if (puckElements && puckElements.length > 0) {
+		} else {
+			// canvasElement.style.border = 'none'
+		}
 
-				const currentPuck = puckElements[puckElements.length - 1]
-				//check if location of puck is inside device
-				const broadcastDevice = getBroadcastDevice(currentPuck, devices, socketId)
+		//Adjust the throwSound volume based on currentPuck
+		const speed = Math.floor(currentPuck.speed * 100) / 100
+		let nextVol = speed > 1 ? 1 : speed
+		// console.log("nextVol: ", nextVol)
 
-				if (broadcastDevice === device) {
-					// console.log("this is broadcastDevice")
-					const nextPucks = generatePuckMessage(puckElements, device)
+		throwSound.volume(nextVol)
 
-					broadcastPucks(nextPucks, device, devices)
+		//stop turn and activate gutter sound when puck is out of bounds
+		const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
+		if (!isPuckInBounds) {
+			//stop the throw sound
+			throwSound.stop()
 
-					//TODO: for test - update style when is broadcastDevice
-					// canvasElement.style.border = '2px solid red'
-				} else {
-					// canvasElement.style.border = 'none'
-				}
-
-				//Adjust the throwSound volume based on currentPuck
-				const speed = Math.floor(currentPuck.speed * 100) / 100
-				let nextVol = speed > 1 ? 1 : speed
-				// console.log("nextVol: ", nextVol)
-
-				throwSound.volume(nextVol)
-
-				//stop turn and activate gutter sound when puck is out of bounds
-				const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
-				if (!isPuckInBounds) {
-					//stop the throw sound
-					throwSound.stop()
-
-					//play gutter sound only once per turn (if puck is in gutter)
-					if (!puckInGutter) {
-						puckInGutter = true
-						//play the gutter sound at half the volume
-						gutterSound.volume(nextVol / 2)
-						gutterSound.play()
-					}
-
-
-
-					//instead of ending turn immediately, just stop the puck from moving, or slow down lots
-					//let the above conditional end the game
-					Body.setVelocity(currentPuck, {
-						x: 0.75 * currentPuck.velocity.x,
-						y: 0.75 * currentPuck.velocity.y
-					})
-
-					return
-				}
+			//play gutter sound only once per turn (if puck is in gutter)
+			if (!puckInGutter) {
+				puckInGutter = true
+				//play the gutter sound at half the volume
+				gutterSound.volume(nextVol / 2)
+				gutterSound.play()
 			}
-		}, pollInterval)
+
+			//instead of ending turn immediately, just stop the puck from moving, or slow down lots
+			//let the above conditional end the game
+			Body.setVelocity(currentPuck, {
+				x: 0.75 * currentPuck.velocity.x,
+				y: 0.75 * currentPuck.velocity.y
+			})
+		}
+	}
+}
+
+function setBroadcastDevice(broadcastDevice) {
+	return (dispatch, getState) => {
+		const {
+			boardConfig,
+			broadcastDevice: stateBroadcastDevice
+		} = getState()
+
+		if (broadcastDevice !== stateBroadcastDevice) {
+			dispatch({
+				type: SET_BROADCAST_DEVICE,
+				broadcastDevice
+			})
+		}
+	}
+}
+
+//call this from socket broadcast to stop turn
+export function stopTurn () {
+	return (dispatch, getState) => {
+		const {boardConfig: {socketId, devices}} = getState()
+		const device = devices[socketId]
+		const gameState = dispatch(getGameState())
+
+		stopPollingPucks()
+		updatePuckCollisions(device, devices)
+
+		//TODO: broadcast turn complete
+		if (!gameState.isGameOver) {
+			dispatch(showNextTurnModal(gameState))
+		} else {
+			dispatch(showGameOverModal(gameState))
+		}
+
+		//stop the throw sound
+		throwSound.stop()
 	}
 }
 
@@ -728,6 +785,29 @@ export function stopPollingPucks() {
 	if (broadcastPoll) {
 		console.log("clearing interval broadcastPoll")
 		clearInterval(broadcastPoll)
+	}
+}
+
+export function userLeft({socketId}) {
+	return (dispatch, getState) => {
+		const gameState = dispatch(getGameState())
+		//todo: fire user_left action
+		dispatch({
+			type: USER_LEFT,
+			socketId
+		})
+
+		dispatch(showGameOverModal(gameState))
+		dispatch(push('/gameover'))
+		exitSocket()
+		// and fire showGameover modal
+	}
+}
+
+export function setBroadcastTimestamp() {
+	return {
+		type: SET_BROADCAST_TIMESTAMP,
+		broadcastTimestamp: Date.now()
 	}
 }
 
@@ -1068,7 +1148,6 @@ export function showStartGameModal() {
 }
 
 export function showNextTurnModal({score, isRedsTurn}) {
-	console.log("puckElements.length: ", puckElements.length)
 	return {
 		type: SHOW_NEXT_TURN_MODAL,
 		score,

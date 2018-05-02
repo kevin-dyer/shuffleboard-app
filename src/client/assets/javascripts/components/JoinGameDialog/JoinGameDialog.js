@@ -73,6 +73,7 @@ export default class JoinGameDialog extends Component {
 						primary={true}
 					/>
 				]}
+				autoScrollBodyContent={true}
 				titleStyle={{textAlign: 'center'}}
 				actionsContainerStyle={{
 					display: "flex",

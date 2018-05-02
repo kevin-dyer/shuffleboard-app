@@ -4,13 +4,12 @@ import {
   UPDATE_USER_COUNT,
   JOINED_ROOM,
   USER_JOINED,
-  USER_LEFT
+  SET_BROADCAST_LATENCY
 } from 'app/actions/socket-actions'
 
 import {
   ADD_PUCK,
   UPDATE_PUCKS,
-  // CANCEL_MODAL,
   ACCEPT_MODAL,
   SHOW_START_GAME_MODAL,
   SHOW_NEXT_TURN_MODAL,
@@ -21,7 +20,10 @@ import {
   START_GAME,
   PLAY_AGAIN,
   CLEAR_DEVICES,
-  CLEAR_PUCKS
+  CLEAR_PUCKS,
+  USER_LEFT,
+  SET_BROADCAST_DEVICE,
+  SET_BROADCAST_TIMESTAMP
 } from 'app/actions/shuffleboard-actions'
 
 import _ from 'underscore'
@@ -37,7 +39,8 @@ const mergeBoardConfigs = (devices, device, timestamp) => {
   }
 }
 
-//Need gamestate to hold score and whos turn it is and is game over
+//NOTE: gamestate which holds score, whos turn it is and is game over
+//      - are calculated on the fly by getGameState
 const initialState = {
   clients: [],
   devices: {},
@@ -49,7 +52,9 @@ const initialState = {
     title: '',
     accepted: true
   },
-  // showJoinModal: false
+  broadcastDevice: null,
+  broadcastLatency: 0,
+  broadcastTimestamp: 0
 }
 
 export function boardConfig(state = initialState, action = {}) {
@@ -65,12 +70,6 @@ export function boardConfig(state = initialState, action = {}) {
         ...state,
         socketId: action.socketId
       }
-
-    // case UPDATE_USER_COUNT:
-    //   return {
-    //     ...state,
-    //     userCount: action.userCount
-    //   }
 
     case JOINED_ROOM:
       return {
@@ -101,13 +100,12 @@ export function boardConfig(state = initialState, action = {}) {
     }
 
     case ADD_PUCK: {
-      const nextPucks = [...state.pucks, action.puck]
-      // nextPucks.push(action.puck)
-
-      // console.log("ADD_PUCK [nextPucks]: ", [...state.pucks, action.puck])
       return {
         ...state,
-        pucks: nextPucks
+        pucks: [
+          ...state.pucks,
+          action.puck
+        ]
       }
     }
 
@@ -116,24 +114,6 @@ export function boardConfig(state = initialState, action = {}) {
         ...state,
         pucks: action.pucks
       }
-
-
-
-      //TODO: change these generic actions out for specific ones
-      // let GameDialog component determine which action to ifre
-    // case CANCEL_MODAL:
-    //   return {
-    //     ...state
-    //   }
-
-    // case ACCEPT_MODAL:
-    //   return {
-    //     ...state,
-    //     dialog: {
-    //       ...dialog,
-    //       accepted: true
-    //     }
-    //   }
 
     case SHOW_START_GAME_MODAL:
       return {
@@ -179,24 +159,6 @@ export function boardConfig(state = initialState, action = {}) {
         }
       }
 
-    //This wont work because the modal should display PIN and number of clients
-    //Need to display a specific modal
-    // case SHOW_ALLOW_JOIN_MODAL:
-    //   return {
-    //     ...state,
-    //     showJoinModal: true
-    //   }
-    // case SHOW_ALLOW_JOIN_MODAL:
-    //   return {
-    //     ...state,
-    //     dialog: {
-    //       ...state.dialog,
-    //       accepted: false,
-    //       title: 'Game PIN: ',
-    //       body: ''
-    //     }
-    //   }
-
     case ACCEPT_MODAL:
       return {
         ...state,
@@ -204,6 +166,18 @@ export function boardConfig(state = initialState, action = {}) {
           ...state.dialog,
           accepted: true
         }
+      }
+
+    case SET_BROADCAST_LATENCY:
+      return {
+        ...state,
+        broadcastLatency: action.broadcastLatency
+      }
+
+    case SET_BROADCAST_DEVICE:
+      return {
+        ...state,
+        broadcastDevice: action.broadcastDevice
       }
 
     case CLEAR_PUCKS:
@@ -216,6 +190,12 @@ export function boardConfig(state = initialState, action = {}) {
       return {
         ...state,
         devices: {}
+      }
+
+    case SET_BROADCAST_TIMESTAMP:
+      return {
+        ...state,
+        broadcastTimestamp: action.broadcastTimestamp
       }
 
     default:
