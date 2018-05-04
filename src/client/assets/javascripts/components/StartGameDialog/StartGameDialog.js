@@ -13,7 +13,7 @@ import TextField from 'material-ui/TextField';
 import _ from 'underscore'
 import {
 } from 'app/actions/shuffleboard-actions'
-import {startGame, joinGame} from 'app/actions/socket-actions'
+import {startGame, joinGame, exitSocket} from 'app/actions/socket-actions'
 import './StartGameDialog.scss'
 
 
@@ -23,6 +23,7 @@ const stateToProps = ({boardConfig}) => ({
 
 
 @connect(stateToProps, {
+	exitSocket,
 	push
 })
 export default class StartGameDialog extends Component {
@@ -32,6 +33,12 @@ export default class StartGameDialog extends Component {
 		this.state= {
 			pin: ''
 		}
+	}
+
+	componentDidMount() {
+		// const {exitSocket} = this.props
+
+		// exitSocket()
 	}
 
 	// componentDidMount() {

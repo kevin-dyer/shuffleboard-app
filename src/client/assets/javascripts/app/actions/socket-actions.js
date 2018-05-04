@@ -55,9 +55,13 @@ export const init = (store) => {
 			store.dispatch(setSocketId(this.id))
 		})
 		.on('disconnect', () => {
-			console.log("Socket disconnected, attempting to socket.open()")
+			console.log("Socket disconnected")
+			socket.close();
   		socket.open();
   		//TODO: redirect to /start
+
+  		//NOTE: this might not be good because if a user exits from different game, still might fire
+  		store.dispatch(exitGame())
 		});
 	//listen here for updates to remote board configs
 	socket.on(BROADCAST_BOARD_CONFIG, payload => {
@@ -236,5 +240,7 @@ export function broadcastStopTurn() {
 }
 
 export function exitSocket() {
-	socket.close()
+	if (socket) {
+		socket.close()
+	}
 }

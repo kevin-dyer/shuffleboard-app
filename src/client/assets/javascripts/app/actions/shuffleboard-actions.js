@@ -795,10 +795,11 @@ export function userLeft({socketId}) {
 			socketId
 		})
 
-		dispatch(showGameOverModal(gameState))
-		dispatch(push('/gameover'))
+		// dispatch(showGameOverModal(gameState))
+		// dispatch(push('/gameover'))
 		exitSocket()
 		// and fire showGameover modal
+		dispatch(exitGame())
 	}
 }
 
