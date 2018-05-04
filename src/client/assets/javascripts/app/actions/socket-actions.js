@@ -49,8 +49,8 @@ export const SET_BROADCAST_LATENCY = 'SET_BROADCAST_LATENCY'
 
 export const init = (store) => {
 	//TODO: switch back when deploy to Heroku
-	// socket = io(uri)
-	socket = io()
+	socket = io(uri)
+	// socket = io()
 		.on('connect', function() {
 			store.dispatch(setSocketId(this.id))
 		})

@@ -154,7 +154,7 @@ export default class ConfigureBoard extends Component {
 
 		traces.enter().append('path')
 			.attr("class", "finger-trace")
-			.style("stroke", "rgba(0,0,0,0.2)")
+			.style("stroke", "rgba(0,0,0,1)")
 			.style("stroke-width", 25)
 			.style("fill", "none")
 

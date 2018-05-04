@@ -6,6 +6,7 @@ import { push } from 'react-router-redux'
 import FlatButton from 'material-ui/FlatButton';
 import RaisedButton from 'material-ui/RaisedButton';
 import Dialog from 'material-ui/Dialog'
+import Paper from 'material-ui/Paper'
 import TextField from 'material-ui/TextField';
 // import {showAllowJoinModal} from 'app/actions/shuffleboard-actions'
 
@@ -32,6 +33,15 @@ export default class StartGameDialog extends Component {
 			pin: ''
 		}
 	}
+
+	// componentDidMount() {
+	// 	//TODO: set body to fixed
+	// 	document.body.position = 'fixed'
+	// }
+
+	// componentWillUnmount() {
+	// 	document.body.position = 'relative'
+	// }
 	handleStartGame(e) {
 		const {push} = this.props
 		startGame()
@@ -53,49 +63,100 @@ export default class StartGameDialog extends Component {
 		const {pin} = this.state
 
 		// console.log("StartGameDialog pin state: ", pin)
+		// return (
+		// 	<Dialog
+		// 		title='Play Shuffleboard!'
+		// 		open={true}
+		// 		onRequestClose={()=>{}}
+		// 		autoScrollBodyContent={true}
+		// 		titleStyle={{textAlign: 'center'}}
+		// 	>
+		// 		<div style={{
+		// 			display: "flex",
+		// 			flexDirection: 'column',
+		// 			alignItems: 'center',
+		// 			justifyContent: 'center'
+		// 		}}>
+		// 			<RaisedButton
+		// 				label="Start a New Game"
+		// 				onTouchTap={startGame}
+		// 				primary={!pin}
+		// 				style={{
+		// 					marginTop: 10
+		// 				}}
+		// 			/>
+
+		// 			<form onSubmit={e => {
+		// 				joinGame(pin);
+		// 				e.preventDefault();
+		// 				e.stopPropagation();
+		// 			}} className="join-game-container">
+		// 				<TextField
+		// 					className='join-input'
+		// 					floatingLabelText="Join w/ PIN"
+		// 					hintText="Enter PIN"
+		// 					onChange={::this.handleInputChange}
+		// 					inputStyle={{
+		// 						fontSize: 20
+		// 					}}
+		// 				/>
+		// 				<FlatButton
+		// 					label="Join"
+		// 					disabled={!this.isPinValid(pin)}
+		// 					type="submit"
+		// 					primary={!!pin}
+		// 				/>
+		// 			</form>
+		// 		</div>
+		// 	</Dialog>
+		// );
+
 		return (
-			<Dialog
-				title='Play Shuffleboard!'
-				open={true}
-				onRequestClose={()=>{}}
-				autoScrollBodyContent={true}
-				titleStyle={{textAlign: 'center'}}
-			>
-				<div style={{
-					display: "flex",
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'center'
-				}}>
-					<RaisedButton
-						label="Start a New Game"
-						onTouchTap={startGame}
-						primary={!pin}
-						style={{
-							marginTop: 10
+			<div className="start-wrapper">
+			<Paper style={{
+				width: '100%',
+				maxWidth: '400px',
+				height: '100%',
+				padding: '20px 10px',
+				display: "flex",
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'space-around',
+				overflowY: 'auto',
+				backgroundColor: 'rgba(255,255,255,0.85)'
+			}}>
+				<h3 className="start-title">Shuffle with Friends</h3>
+				<RaisedButton
+					label="Start a New Game"
+					onTouchTap={startGame}
+					primary={!pin}
+				/>
+
+				<div className="or">-- or --</div>
+
+				<form onSubmit={e => {
+					joinGame(pin);
+					e.preventDefault();
+					e.stopPropagation();
+				}} className="join-game-container">
+					<TextField
+						className='join-input'
+						floatingLabelText="Join with PIN"
+						hintText="Enter PIN"
+						onChange={::this.handleInputChange}
+						inputStyle={{
+							fontSize: 20
 						}}
 					/>
-
-					<form onSubmit={e => {
-						joinGame(pin);
-						e.preventDefault();
-						e.stopPropagation();
-					}} className="join-game-container">
-						<TextField
-							className='join-input'
-							floatingLabelText="Join w/ PIN"
-							hintText="Enter PIN"
-							onChange={::this.handleInputChange}
-						/>
-						<FlatButton
-							label="Join"
-							disabled={!this.isPinValid(pin)}
-							type="submit"
-							primary={!!pin}
-						/>
-					</form>
-				</div>
-			</Dialog>
+					<FlatButton
+						label="Join"
+						disabled={!this.isPinValid(pin)}
+						type="submit"
+						primary={!!pin}
+					/>
+				</form>
+			</Paper>
+			</div>
 		);
 	}
 }
