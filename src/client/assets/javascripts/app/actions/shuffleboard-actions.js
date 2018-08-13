@@ -67,6 +67,8 @@ const scoreBoxHeight = 100
 const puckRad = 35
 let isMouseDown = false
 const pollInterval = 200 //was 50
+let checkEndPoll
+const endPollInterval = 1500
 let lastBroadcaster
 let mouseDownSound
 let throwSound
@@ -667,9 +669,23 @@ export function startPollingPucks () {
 			),
 			pollInterval
 		)
+
+		checkEndPoll = setInterval(
+			checkIfTurnIsDone.bind(
+				null,
+				device,
+				devices,
+				dispatch
+			),
+			endPollInterval
+		)
 	}
 }
 
+
+//TODO: break up into two different intervals
+// 1. broadcastPucks
+// 2. stopTurn (including if moving puck is inside board) - slow interval
 function turnStep(device, devices, socketId, dispatch, getState) {
 	//Note: Only broadcast here if current puck is diplayed on current device
 	const {boardConfig: {broadcastTimestamp=0}} = getState()
@@ -691,20 +707,6 @@ function turnStep(device, devices, socketId, dispatch, getState) {
 
 				broadcastPucks(nextPucks, device, devices)
 			}
-			// console.log("this is broadcastDevice")
-
-
-			//TODO: for test - update style when is broadcastDevice
-			// canvasElement.style.border = '2px solid red'
-
-			//TODO: move into socket actions on PUCK_BROADCAST_COMPLETE response - use to decide whether to call turnStep again
-			//BIG TODO: modify so that only the broadcaster can stop the turn
-			const boardIsActive = isBoardActive(puckElements)
-			if (!boardIsActive && !isMouseDown) {
-				broadcastStopTurn()
-				dispatch(stopTurn())
-			}
-
 		} else {
 			// canvasElement.style.border = 'none'
 		}
@@ -712,31 +714,46 @@ function turnStep(device, devices, socketId, dispatch, getState) {
 		//Adjust the throwSound volume based on currentPuck
 		const speed = Math.floor(currentPuck.speed * 100) / 100
 		let nextVol = speed > 1 ? 1 : speed
-		// console.log("nextVol: ", nextVol)
 
 		throwSound.volume(nextVol)
+	}
+}
 
-		//stop turn and activate gutter sound when puck is out of bounds
-		const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
-		if (!isPuckInBounds) {
-			//stop the throw sound
-			throwSound.stop()
+//TODO: change isBoardActive to check if inBounds
+function checkIfTurnIsDone(device, devices, dispatch) {
+	if (puckElements.length === 0) return
+	const currentPuck = puckElements[puckElements.length - 1]
+	const broadcastDevice = getBroadcastDevice(currentPuck, devices, device.id)
 
-			//play gutter sound only once per turn (if puck is in gutter)
-			if (!puckInGutter) {
-				puckInGutter = true
-				//play the gutter sound at half the volume
-				gutterSound.volume(nextVol / 2)
-				gutterSound.play()
-			}
+	if (broadcastDevice === device) {
+		const boardIsActive = isBoardActive(puckElements, device, devices)
 
-			//instead of ending turn immediately, just stop the puck from moving, or slow down lots
-			//let the above conditional end the game
-			Body.setVelocity(currentPuck, {
-				x: 0.75 * currentPuck.velocity.x,
-				y: 0.75 * currentPuck.velocity.y
-			})
+		if (!boardIsActive && !isMouseDown) {
+			broadcastStopTurn()
+			dispatch(stopTurn())
 		}
+	}
+
+	//stop turn and activate gutter sound when puck is out of bounds
+	const isPuckInBounds = isPuckOnBoard(currentPuck, device, devices)
+	if (!isPuckInBounds) {
+		//stop the throw sound
+		throwSound.stop()
+
+		//play gutter sound only once per turn (if puck is in gutter)
+		if (!puckInGutter) {
+			puckInGutter = true
+			//play the gutter sound at half the volume
+			gutterSound.volume(0.5)
+			gutterSound.play()
+		}
+
+		//instead of ending turn immediately, just stop the puck from moving, or slow down lots
+		//let the above conditional end the game
+		Body.setVelocity(currentPuck, {
+			x: 0.75 * currentPuck.velocity.x,
+			y: 0.75 * currentPuck.velocity.y
+		})
 	}
 }
 
@@ -783,6 +800,11 @@ export function stopPollingPucks() {
 	if (broadcastPoll) {
 		console.log("clearing interval broadcastPoll")
 		clearInterval(broadcastPoll)
+	}
+
+	if (checkEndPoll) {
+		console.log("clearing interval checkEndPoll")
+		clearInterval(checkEndPoll)
 	}
 }
 
@@ -907,14 +929,17 @@ export function getLengthOffset (socketId, devices) {
 		},0)
 }
 
-export function isBoardActive (pucks = []) {
+export function isBoardActive (pucks = [], device, devices) {
 	//TODO: should also consider if a puck has left the board area
 	return pucks.reduce((isActive, puck) => {
 		if (isActive) {
 			return isActive
 		}
 
-		return (Math.abs(puck.velocity.x) + Math.abs(puck.velocity.y)) > 0.01
+		const isPuckInBounds = isPuckOnBoard(puck, device, devices)
+
+		//TODO: check if in bounds
+		return isPuckInBounds && (Math.abs(puck.velocity.x) + Math.abs(puck.velocity.y)) > 0.01
 	}, false)
 }
 
